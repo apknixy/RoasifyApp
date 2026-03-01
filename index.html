@@ -17,16 +17,16 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    <!-- Razorpay Payment Gateway Script -->
+    <!-- Razorpay SDK -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
     <style>
-        body { background-color: #000; color: #fff; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent;}
+        body { background-color: #000; color: #fff; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden;}
         .hide { display: none !important; }
         .gradient-bg { background: linear-gradient(to bottom right, #f58529, #dd2a7b); }
         .ad-container { min-height: 250px; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: 1px solid #222; border-bottom: 1px solid #222; margin: 16px 0; width: 100%; overflow: hidden;}
         
-        .modal-bg { background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+        .modal-bg { background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 60;}
         .premium-star { animation: pulseStar 1.5s infinite; text-shadow: 0 0 10px #FFD700; }
         @keyframes pulseStar { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
         
@@ -37,19 +37,23 @@
         .progress-bar-bg { width: 100%; background-color: #333; border-radius: 10px; margin-top: 5px; height: 6px; overflow: hidden;}
         .progress-bar-fill { height: 100%; background-color: #dd2a7b; width: 0%; transition: width 0.3s ease; }
 
-        /* Custom Toast Message Box */
-        #toastBox { transition: top 0.4s ease, opacity 0.4s ease; z-index: 1000; }
+        /* Toast Message */
+        #toastBox { transition: top 0.4s ease, opacity 0.4s ease; z-index: 9999; }
+        
+        /* Nav Active State */
+        .nav-active { color: #fff !important; }
+        .nav-inactive { color: #6b7280 !important; }
     </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden select-none">
+<body class="h-screen flex flex-col select-none">
 
-    <!-- CUSTOM TOAST MESSAGE BOX -->
+    <!-- TOAST MESSAGE SYSTEM -->
     <div id="toastBox" class="fixed top-[-100px] left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-600 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 flex items-center gap-3 w-max max-w-[90%]">
         <i id="toastIcon" class="fa-solid fa-bell text-blue-400"></i>
         <span id="toastMsg" class="text-sm font-bold">Message Here</span>
     </div>
 
-    <!-- LOGIN SCREEN -->
+    <!-- 1. LOGIN SCREEN -->
     <div id="loginScreen" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center">
         <div class="w-24 h-24 rounded-full gradient-bg flex items-center justify-center mb-6 shadow-2xl">
             <span class="text-white text-5xl font-bold">R</span>
@@ -61,18 +65,22 @@
         </button>
     </div>
 
-    <!-- MAIN APP DASHBOARD -->
+    <!-- 2. MAIN APP DASHBOARD -->
     <div id="mainApp" class="hide h-full flex flex-col relative">
+        <!-- HEADER -->
         <header class="flex justify-between items-center p-4 border-b border-gray-800 bg-black z-10">
             <h1 id="headerTitle" class="text-2xl font-bold">Roasify</h1>
             <div class="flex gap-5 text-2xl items-center">
                 <i class="fa-solid fa-crown text-yellow-500 cursor-pointer premium-star" onclick="document.getElementById('premiumModal').classList.remove('hide')"></i>
                 <i class="fa-solid fa-wallet text-gray-400 cursor-pointer" onclick="showToast('Wallet Balance: ₹0.00', 'info')"></i>
-                <i class="fa-brands fa-whatsapp text-green-500 cursor-pointer"></i>
+                <i class="fa-brands fa-whatsapp text-green-500 cursor-pointer" onclick="showToast('Business Chats opening...', 'info')"></i>
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto pb-20 bg-black" id="mainScrollArea">
+        <!-- MAIN SCROLLABLE AREA -->
+        <main class="flex-1 overflow-y-auto pb-20 bg-black w-full" id="mainScrollArea">
+            
+            <!-- TAB: HOME (FEED & UPLOAD) -->
             <div id="tab-home" class="w-full">
                 <!-- Create Post Box -->
                 <div class="p-4 border-b border-gray-800 bg-gray-900">
@@ -98,7 +106,7 @@
                             <input type="file" id="mediaUpload" accept="image/*,video/*" class="hide" onchange="handleFileSelect(event)">
                             <i class="fa-solid fa-image cursor-pointer hover:text-white" onclick="document.getElementById('mediaUpload').click()"></i>
                             <i class="fa-solid fa-video cursor-pointer hover:text-white" onclick="document.getElementById('mediaUpload').click()"></i>
-                            <i class="fa-solid fa-briefcase cursor-pointer hover:text-white"></i>
+                            <i class="fa-solid fa-briefcase cursor-pointer hover:text-white" onclick="switchTab('tab-jobs', 'nav-jobs')"></i>
                         </div>
                         <button id="postBtn" onclick="uploadAndCreatePost()" class="bg-blue-600 px-6 py-2 rounded-full text-sm font-bold shadow-lg shadow-blue-500/50">Post</button>
                     </div>
@@ -110,19 +118,106 @@
                     <div class="text-center py-10 text-gray-500"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><br>Loading feed...</div>
                 </div>
             </div>
+
+            <!-- TAB: JOBS & OFFERS -->
+            <div id="tab-jobs" class="w-full hide p-4">
+                <h2 class="text-2xl font-bold mb-4">Micro-Jobs & Offers</h2>
+                
+                <!-- Business Coupon Demo -->
+                <div class="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg p-4 mb-4 shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-4 -top-4 w-20 h-20 bg-white opacity-20 rounded-full"></div>
+                    <div class="flex justify-between items-center relative z-10">
+                        <div>
+                            <h3 class="font-bold text-lg text-white">Sharma Electronics</h3>
+                            <p class="text-xs text-white">Visit our physical shop for 20% OFF!</p>
+                        </div>
+                        <button class="bg-white text-black font-bold px-4 py-2 rounded-lg border-dashed border-2 border-gray-800" onclick="showToast('Coupon Redeemed! Code: SHARMA20', 'success')">
+                            REDEEM
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Job Post Demo -->
+                <div class="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="font-bold text-lg">Delivery Executive Needed</h3>
+                            <p class="text-sm text-gray-400 mb-2"><i class="fa-solid fa-location-dot"></i> New Delhi, India</p>
+                        </div>
+                        <span class="bg-green-900 text-green-400 text-xs px-2 py-1 rounded">5 Vacancies</span>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-3">Applicants: 12 applied so far.</p>
+                    <button class="w-full bg-blue-600 hover:bg-blue-700 py-2 rounded font-bold transition" onclick="document.getElementById('jobModal').classList.remove('hide')">Apply Now</button>
+                </div>
+            </div>
+
+            <!-- TAB: E-COMMERCE SHOP -->
+            <div id="tab-shop" class="w-full hide p-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-bold">Global Shop</h2>
+                    <select class="bg-gray-800 border border-gray-700 text-xs rounded p-1 outline-none">
+                        <option>₹ INR</option><option>$ USD</option><option>€ EUR</option>
+                    </select>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Product Card -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-lg p-3">
+                        <div class="w-full h-32 bg-gray-800 rounded mb-2 flex items-center justify-center">
+                            <i class="fa-solid fa-shoe-prints text-4xl text-gray-600"></i>
+                        </div>
+                        <h3 class="font-bold">Nike Air Max</h3>
+                        <p class="text-xs text-gray-400 mb-1 italic">Running shoes</p>
+                        <p class="text-green-500 font-bold mb-2">₹4,999 <span class="text-xs text-gray-500 line-through">$80</span></p>
+                        <button class="w-full bg-green-600 hover:bg-green-700 py-2 rounded font-bold text-sm flex justify-center items-center gap-2" onclick="buyViaWhatsApp('Nike Air Max', '4999', '+919876543210')">
+                            <i class="fa-brands fa-whatsapp text-lg"></i> Get it
+                        </button>
+                    </div>
+
+                    <!-- Product Card -->
+                    <div class="bg-gray-900 border border-gray-800 rounded-lg p-3">
+                        <div class="w-full h-32 bg-gray-800 rounded mb-2 flex items-center justify-center">
+                            <i class="fa-solid fa-laptop text-4xl text-gray-600"></i>
+                        </div>
+                        <h3 class="font-bold">MacBook Pro</h3>
+                        <p class="text-xs text-gray-400 mb-1 italic">M2 Chip, 16GB</p>
+                        <p class="text-green-500 font-bold mb-2">₹1,19,999</p>
+                        <button class="w-full bg-green-600 hover:bg-green-700 py-2 rounded font-bold text-sm flex justify-center items-center gap-2" onclick="buyViaWhatsApp('MacBook Pro M2', '119999', '+919876543210')">
+                            <i class="fa-brands fa-whatsapp text-lg"></i> Get it
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: PROFILE (Placeholder) -->
+            <div id="tab-profile" class="w-full hide p-4 flex flex-col items-center justify-center h-full text-center">
+                <div class="w-24 h-24 rounded-full border-2 border-gray-500 bg-gray-800 flex justify-center items-center mb-4 text-4xl font-bold" id="profileBigAvatar">U</div>
+                <h2 class="text-2xl font-bold mb-1" id="profileName">User Name</h2>
+                <p class="text-gray-400 mb-6" id="profileRole">Normal Account</p>
+                <div class="flex gap-4 w-full justify-center">
+                    <div class="text-center"><p class="font-bold text-xl">0</p><p class="text-xs text-gray-500">Posts</p></div>
+                    <div class="text-center"><p class="font-bold text-xl">1.2K</p><p class="text-xs text-gray-500">Followers</p></div>
+                    <div class="text-center"><p class="font-bold text-xl">45</p><p class="text-xs text-gray-500">Following</p></div>
+                </div>
+                <button class="mt-8 bg-red-600 text-white px-8 py-2 rounded-full font-bold w-full max-w-xs" onclick="logout()">Logout Account</button>
+            </div>
         </main>
 
         <!-- BOTTOM NAV -->
         <nav class="flex justify-around items-center p-3 bg-black border-t border-gray-800 fixed bottom-0 w-full text-2xl z-20 pb-4">
-            <i class="fa-solid fa-house text-white cursor-pointer"></i>
-            <i class="fa-solid fa-map-location-dot text-gray-500 cursor-pointer" onclick="showToast('Maps View Coming', 'info')"></i>
-            <i class="fa-solid fa-briefcase text-gray-500 cursor-pointer"></i>
-            <i class="fa-solid fa-store text-gray-500 cursor-pointer"></i>
-            <div class="w-8 h-8 rounded-full border-2 border-gray-500 bg-gray-800 flex justify-center items-center cursor-pointer" onclick="showToast('Profile Section Loading...', 'info')">
+            <i id="nav-home" class="fa-solid fa-house cursor-pointer nav-active" onclick="switchTab('tab-home', 'nav-home')"></i>
+            <i id="nav-map" class="fa-solid fa-map-location-dot cursor-pointer nav-inactive" onclick="showToast('Google Maps API connecting...', 'info')"></i>
+            <i id="nav-jobs" class="fa-solid fa-briefcase cursor-pointer nav-inactive" onclick="switchTab('tab-jobs', 'nav-jobs')"></i>
+            <i id="nav-shop" class="fa-solid fa-store cursor-pointer nav-inactive" onclick="switchTab('tab-shop', 'nav-shop')"></i>
+            <div id="nav-profile" class="w-8 h-8 rounded-full border-2 border-gray-600 bg-gray-800 flex justify-center items-center cursor-pointer nav-inactive" onclick="switchTab('tab-profile', 'nav-profile')">
                 <span id="navAvatar" class="text-xs font-bold text-white">U</span>
             </div>
         </nav>
     </div>
+
+    <!-- ========================================== -->
+    <!-- MODALS -->
+    <!-- ========================================== -->
 
     <!-- VIP MODAL (PAYMENT SYSTEM) -->
     <div id="premiumModal" class="absolute inset-0 z-50 modal-bg hide flex items-center justify-center p-4">
@@ -147,38 +242,74 @@
         </div>
     </div>
 
+    <!-- JOB APPLY MODAL -->
+    <div id="jobModal" class="absolute inset-0 z-50 modal-bg hide flex flex-col items-center justify-end">
+        <div class="bg-gray-900 w-full h-5/6 rounded-t-xl border-t border-gray-700 p-6 overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold">Apply for Micro-Job</h2>
+                <i class="fa-solid fa-xmark text-2xl cursor-pointer" onclick="document.getElementById('jobModal').classList.add('hide')"></i>
+            </div>
+            <input type="text" placeholder="Full Name" class="w-full bg-black border border-gray-700 p-3 rounded mb-3 text-white focus:border-blue-500 outline-none">
+            <input type="email" placeholder="Email Address" class="w-full bg-black border border-gray-700 p-3 rounded mb-3 text-white focus:border-blue-500 outline-none">
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <input type="text" placeholder="Village/City" class="w-full bg-black border border-gray-700 p-3 rounded text-white outline-none">
+                <input type="text" placeholder="State" class="w-full bg-black border border-gray-700 p-3 rounded text-white outline-none">
+            </div>
+            <textarea placeholder="Education & Current Position..." class="w-full bg-black border border-gray-700 p-3 rounded mb-3 h-24 text-white outline-none resize-none"></textarea>
+            <button class="w-full bg-gray-800 border border-gray-600 hover:bg-gray-700 py-3 rounded mb-4 text-sm transition"><i class="fa-solid fa-file-pdf text-red-500"></i> Attach Resume (PDF)</button>
+            <button class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded font-bold transition shadow-lg" onclick="submitJobApplication()">Submit Application</button>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 🔥 JAVASCRIPT LOGIC ENGINE 🔥 -->
+    <!-- ========================================== -->
     <script>
-        // ==========================================
-        // 🔥 CUSTOM TOAST MESSAGE SYSTEM
-        // ==========================================
+        // --- TOAST NOTIFICATION ---
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toastBox');
             const icon = document.getElementById('toastIcon');
             document.getElementById('toastMsg').innerText = message;
             
-            if(type === 'error') { icon.className = "fa-solid fa-circle-exclamation text-red-500"; }
-            else if(type === 'info') { icon.className = "fa-solid fa-circle-info text-blue-400"; }
-            else { icon.className = "fa-solid fa-circle-check text-green-500"; }
+            if(type === 'error') icon.className = "fa-solid fa-circle-exclamation text-red-500";
+            else if(type === 'info') icon.className = "fa-solid fa-circle-info text-blue-400";
+            else icon.className = "fa-solid fa-circle-check text-green-500";
 
             toast.style.top = '20px';
             toast.style.opacity = '1';
-
-            setTimeout(() => {
-                toast.style.top = '-100px';
-                toast.style.opacity = '0';
-            }, 3000);
+            setTimeout(() => { toast.style.top = '-100px'; toast.style.opacity = '0'; }, 3000);
         }
 
-        // ==========================================
-        // 🔥 1. CLOUDINARY UPLOAD SETTINGS
-        // ==========================================
-        // AAPKE ASLI CLOUDINARY CREDENTIALS 🚀
+        // --- TAB SWITCHER ---
+        function switchTab(tabId, navId) {
+            ['tab-home', 'tab-jobs', 'tab-shop', 'tab-profile'].forEach(t => document.getElementById(t).classList.add('hide'));
+            ['nav-home', 'nav-map', 'nav-jobs', 'nav-shop', 'nav-profile'].forEach(n => {
+                let el = document.getElementById(n);
+                if(el.id === 'nav-profile') el.classList.replace('border-gray-400', 'border-gray-600');
+                else el.classList.replace('nav-active', 'nav-inactive');
+            });
+
+            document.getElementById(tabId).classList.remove('hide');
+            let activeNav = document.getElementById(navId);
+            if(navId === 'nav-profile') activeNav.classList.replace('border-gray-600', 'border-gray-400');
+            else activeNav.classList.replace('nav-inactive', 'nav-active');
+        }
+
+        function buyViaWhatsApp(product, price, number) {
+            let msg = encodeURIComponent(`Hi, I want to buy ${product} for ₹${price} from Roasify App.`);
+            window.open(`https://wa.me/${number}?text=${msg}`, '_blank');
+        }
+
+        function submitJobApplication() {
+            document.getElementById('jobModal').classList.add('hide');
+            showToast('Application sent to Business Inbox!', 'success');
+        }
+
+        // --- CLOUDINARY CONFIG (ASLI WALA) ---
         const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dhy28gbtx/auto/upload"; 
         const UPLOAD_PRESET = "h5x3jurh"; 
 
-        // ==========================================
-        // 🔥 2. FIREBASE CONFIG 
-        // ==========================================
+        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyCatxgsLqijsj1o1BXTrJqAST02lPWa4SY",
             authDomain: "roasify-2b050.firebaseapp.com",
@@ -199,13 +330,19 @@
                     if (userData) {
                         document.getElementById('loginScreen').classList.add('hide');
                         document.getElementById('mainApp').classList.remove('hide');
-                        document.getElementById('postAvatarUI').innerText = userData.name.charAt(0).toUpperCase();
-                        document.getElementById('navAvatar').innerText = userData.name.charAt(0).toUpperCase();
+                        
+                        let initial = userData.name.charAt(0).toUpperCase();
+                        document.getElementById('postAvatarUI').innerText = initial;
+                        document.getElementById('navAvatar').innerText = initial;
+                        document.getElementById('profileBigAvatar').innerText = initial;
+                        document.getElementById('profileName').innerText = userData.name;
 
                         if(userData.VIP_Star === "true"){
                             document.getElementById('headerTitle').innerHTML = 'Roasify <i class="fa-solid fa-star text-yellow-500 text-sm premium-star"></i>';
+                            document.getElementById('profileRole').innerHTML = 'VIP Premium Member <i class="fa-solid fa-star text-yellow-500 text-xs"></i>';
                         } else {
                             document.getElementById('headerTitle').innerHTML = 'Roasify';
+                            document.getElementById('profileRole').innerText = 'Standard User';
                         }
                         
                         checkUploadLimits();
@@ -215,6 +352,7 @@
                 });
             } else {
                 document.getElementById('loginScreen').classList.remove('hide');
+                document.getElementById('mainApp').classList.add('hide');
             }
         });
 
@@ -227,15 +365,20 @@
             }).catch(err => showToast("Login Error: " + err.message, "error"));
         }
 
+        function logout() {
+            if(confirm("Are you sure you want to logout?")) {
+                auth.signOut();
+                showToast("Logged out successfully", "info");
+            }
+        }
+
         function checkUploadLimits() {
             let today = new Date().toDateString();
             todayPostsCount = (userData.lastPostDate === today) ? (userData.todayPostsCount || 0) : 0;
             document.getElementById('uploadsLeft').innerText = (5 - todayPostsCount);
         }
 
-        // ==========================================
-        // 🔥 3. CLOUDINARY UPLOAD LOGIC
-        // ==========================================
+        // --- MEDIA UPLOAD (CLOUDINARY) ---
         function handleFileSelect(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -288,11 +431,8 @@
                     const response = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
                     const data = await response.json();
                     
-                    if(data.secure_url) {
-                        finalMediaUrl = data.secure_url; 
-                    } else {
-                        throw new Error(data.error ? data.error.message : "Unknown error");
-                    }
+                    if(data.secure_url) { finalMediaUrl = data.secure_url; } 
+                    else { throw new Error(data.error ? data.error.message : "Unknown error"); }
                 } catch(error) {
                     showToast("Upload Failed: " + error.message, "error");
                     resetPostUI();
@@ -322,9 +462,7 @@
             document.getElementById('postBtn').disabled = false;
         }
 
-        // ==========================================
-        // 🔥 4. LOAD REAL FEED 
-        // ==========================================
+        // --- FEED RENDERING ---
         function loadOriginalFeed() {
             db.ref('Posts').orderByChild('timestamp').limitToLast(20).on('value', (snapshot) => {
                 const feed = document.getElementById('realFeedContainer');
@@ -356,19 +494,20 @@
                     <article class="w-full mb-4 border-b border-gray-800 pb-4">
                         <div class="flex justify-between items-center p-3">
                             <div class="flex items-center gap-3 cursor-pointer">
-                                <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center font-bold text-white">${initial}</div>
+                                <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center font-bold text-white shadow">${initial}</div>
                                 <span class="font-bold text-sm">${post.author} ${vipBadge}</span>
                             </div>
+                            <i class="fa-solid fa-ellipsis text-gray-400"></i>
                         </div>
                         <div class="px-3 pb-2 text-sm">${post.text}</div>
                         ${mediaHTML}
                         <div class="flex justify-between px-3 pt-3 text-2xl text-gray-400">
                             <div class="flex gap-5">
-                                <i class="fa-regular fa-heart cursor-pointer hover:text-red-500" onclick="showToast('Liked!', 'success')"></i>
-                                <i class="fa-regular fa-comment cursor-pointer hover:text-white"></i>
-                                <i class="fa-solid fa-share-nodes cursor-pointer hover:text-blue-500" onclick="navigator.clipboard.writeText(window.location.href); showToast('Link Copied!', 'success');"></i>
+                                <i class="fa-regular fa-heart cursor-pointer hover:text-red-500 transition" onclick="showToast('Liked!', 'success')"></i>
+                                <i class="fa-regular fa-comment cursor-pointer hover:text-white transition"></i>
+                                <i class="fa-solid fa-share-nodes cursor-pointer hover:text-blue-500 transition" onclick="navigator.clipboard.writeText(window.location.href); showToast('Link Copied!', 'success');"></i>
                             </div>
-                            <i class="fa-regular fa-bookmark cursor-pointer hover:text-white"></i>
+                            <i class="fa-regular fa-bookmark cursor-pointer hover:text-white transition"></i>
                         </div>
                     </article>`;
 
@@ -382,52 +521,43 @@
             });
         }
 
-        // ==========================================
-        // 🔥 5. PAYMENT SYSTEM (RAZORPAY INTEGRATION)
-        // ==========================================
+        // --- RAZORPAY PAYMENT ---
         function startPayment(amount, planName) {
             if(!currentUser) return showToast("Please login first", "error");
             document.getElementById('premiumModal').classList.add('hide');
             showToast(`Opening Payment Gateway for ₹${amount}...`, "info");
 
-            // Razorpay Options
             var options = {
-                "key": "rzp_test_YOUR_TEST_KEY_HERE", // Replace with your Real API Key later
-                "amount": amount * 100, // Amount in paise
+                "key": "rzp_test_YOUR_TEST_KEY_HERE", 
+                "amount": amount * 100, 
                 "currency": "INR",
                 "name": "Roasify Super App",
                 "description": "Upgrade to " + planName,
                 "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/192px-Instagram_logo_2016.svg.png",
                 "handler": function (response) {
-                    // PAYMENT SUCCESSFUL 💰🔥
-                    showToast("Payment Successful! Upgrading to VIP...", "success");
-                    
-                    // Update Database
-                    db.ref('Users/' + currentUser.uid).update({
-                        VIP_Star: "true"
-                    }).then(() => {
+                    showToast("Payment Successful! Upgrading...", "success");
+                    db.ref('Users/' + currentUser.uid).update({ VIP_Star: "true" }).then(() => {
                         showToast("🎉 Welcome to VIP! Ads Removed.", "success");
-                        // 1 second baad page refresh karein taaki ads gayab ho jayein aur Star lag jaye
                         setTimeout(() => window.location.reload(), 1500);
                     });
                 },
-                "prefill": {
-                    "name": userData.name,
-                    "email": currentUser.email,
-                },
-                "theme": {
-                    "color": "#dd2a7b"
-                }
+                "prefill": { "name": userData.name, "email": currentUser.email },
+                "theme": { "color": "#dd2a7b" }
             };
             var rzp1 = new Razorpay(options);
-            rzp1.on('payment.failed', function (response){
-                showToast("Payment Failed or Cancelled.", "error");
-            });
+            rzp1.on('payment.failed', function (response){ showToast("Payment Cancelled.", "error"); });
             rzp1.open();
+        }
+
+        // --- PWA SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
+            });
         }
     </script>
 
-    <!-- ADS WATERFALL SCRIPT -->
+    <!-- --- ADS WATERFALL SCRIPT --- -->
     <script>
         function initGlobalAds(isPremium) {
             if (isPremium === "true") return; 
@@ -456,5 +586,3 @@
     </script>
 </body>
 </html>
-
-
