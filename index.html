@@ -8,75 +8,75 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
 
+    <!-- Tailwind & Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
+    <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-
-    <script src="ads.js"></script>
 
     <style>
         body { background-color: #000; color: #fff; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent;}
         .hide { display: none !important; }
         .gradient-bg { background: linear-gradient(to bottom right, #f58529, #dd2a7b); }
-        .ad-container { min-height: 50px; background: #111; display: flex; justify-content: center; align-items: center; border-top: 1px solid #222; border-bottom: 1px solid #222; margin-bottom: 16px; }
+        .ad-container { min-height: 250px; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: 1px solid #222; border-bottom: 1px solid #222; margin-bottom: 16px; width: 100%; overflow: hidden;}
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden select-none">
 
-    <!-- LOGIN SCREEN -->
+    <!-- ========================================== -->
+    <!-- 1. LOGIN SCREEN -->
+    <!-- ========================================== -->
     <div id="loginScreen" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center">
-        <div class="w-24 h-24 rounded-full gradient-bg flex items-center justify-center mb-6 shadow-xl">
+        <div class="w-24 h-24 rounded-full gradient-bg flex items-center justify-center mb-6 shadow-2xl">
             <span class="text-white text-5xl font-bold">R</span>
         </div>
         <h1 class="text-4xl font-bold text-white mb-2">Roasify</h1>
-        <p class="text-gray-400 mb-10 text-sm">Business, Jobs & Social App</p>
+        <p class="text-gray-400 mb-10 text-sm text-center px-4">Business, Jobs, E-commerce & Social Media</p>
         
         <button onclick="signInWithGoogle()" class="bg-blue-600 text-white px-8 py-3 rounded-lg shadow-md font-bold text-lg flex items-center gap-3">
-            <i class="fa-brands fa-google"></i> SIGN IN WITH GOOGLE
+            <i class="fa-brands fa-google"></i> SIGN IN
         </button>
         <p id="loginError" class="text-red-500 mt-4 text-xs font-bold"></p>
     </div>
 
-    <!-- MAIN APP DASHBOARD -->
+    <!-- ========================================== -->
+    <!-- 2. MAIN APP DASHBOARD -->
+    <!-- ========================================== -->
     <div id="mainApp" class="hide h-full flex flex-col">
         
         <header class="flex justify-between items-center p-4 border-b border-gray-800 bg-black z-10">
             <h1 id="headerTitle" class="text-2xl font-bold">Roasify</h1>
             <div class="flex gap-4 text-2xl">
-                <i class="fa-solid fa-crown text-yellow-500 cursor-pointer" onclick="buyPremium()" title="Upgrade to VIP"></i>
+                <!-- VIP Crown -->
+                <i class="fa-solid fa-crown text-yellow-500 cursor-pointer" onclick="alert('Premium Features Loading...')" title="VIP Star"></i>
                 <i class="fa-regular fa-paper-plane"></i>
             </div>
         </header>
 
-        <!-- Dynamic Feed Container -->
-        <main id="feedContainer" class="flex-1 overflow-y-auto pb-20 scrollbar-hide">
-            <!-- JavaScript yahan posts aur ads daalega -->
+        <!-- DYNAMIC FEED -->
+        <main id="feedContainer" class="flex-1 overflow-y-auto pb-20 scrollbar-hide bg-black">
+            <!-- Posts and Ads will be generated here by JavaScript -->
         </main>
 
-        <!-- Bottom Navigation -->
+        <!-- BOTTOM NAV -->
         <nav class="flex justify-around items-center p-3 bg-black border-t border-gray-800 fixed bottom-0 w-full text-2xl z-20 pb-4">
             <i class="fa-solid fa-house text-white cursor-pointer"></i>
-            <i class="fa-solid fa-magnifying-glass text-gray-500 cursor-pointer"></i>
+            <i class="fa-solid fa-magnifying-glass text-gray-500 cursor-pointer" onclick="alert('Search Feature Coming Soon')"></i>
             <i class="fa-regular fa-square-plus text-pink-500 cursor-pointer"></i>
-            <i class="fa-solid fa-briefcase text-gray-500 cursor-pointer" onclick="alert('Jobs Portal coming soon!')"></i>
+            <i class="fa-solid fa-briefcase text-gray-500 cursor-pointer" onclick="alert('Micro Jobs Portal Coming Soon!')"></i>
             <div class="w-8 h-8 rounded-full border-2 border-gray-500 bg-gray-800 flex justify-center items-center cursor-pointer" onclick="logout()">
                 <span id="navAvatar" class="text-xs font-bold text-white">U</span>
             </div>
         </nav>
     </div>
 
+    <!-- ========================================== -->
+    <!-- 🔥 FIREBASE & APP LOGIC 🔥 -->
+    <!-- ========================================== -->
     <script>
-        // PWA Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log(err));
-            });
-        }
-
-        // Firebase Config
         const firebaseConfig = {
             apiKey: "AIzaSyCatxgsLqijsj1o1BXTrJqAST02lPWa4SY",
             authDomain: "roasify-2b050.firebaseapp.com",
@@ -106,11 +106,9 @@
                             document.getElementById('headerTitle').innerHTML = 'Roasify <i class="fa-solid fa-star text-yellow-500 text-sm"></i>';
                         }
                         
-                        // Start Background Ads
-                        initAllAds(currentUserPremiumStatus);
-                        
-                        // Generate Dynamic Feed
+                        // Feed banayein aur Ads chalu karein
                         generateDynamicFeed();
+                        initGlobalAds(currentUserPremiumStatus);
                     }
                 });
             } else {
@@ -125,64 +123,60 @@
                 db.ref('Users/' + result.user.uid).update({
                     name: result.user.displayName,
                     email: result.user.email,
-                    accountType: "User Account",
-                    VIP_Star: "false"
+                    VIP_Star: "false" // Default Free User
                 });
-            }).catch(err => console.log(err));
+            }).catch(err => alert("Login Error: " + err.message));
         }
 
         function logout() {
-            if(confirm("Logout karna chahte hain?")) auth.signOut();
-        }
-
-        function buyPremium() {
-            alert("Razorpay Integration Coming Next! \nUpgrade to VIP Star for ₹699/month to remove all Ads and get unlimited storage.");
+            if(confirm("Do you want to logout?")) auth.signOut();
         }
 
         // ==========================================
-        // 🔥 DYNAMIC FEED & SCROLL ADS GENERATOR
+        // 🔥 DYNAMIC FEED GENERATOR 🔥
         // ==========================================
         function generateDynamicFeed() {
             const feedContainer = document.getElementById('feedContainer');
-            feedContainer.innerHTML = ''; // Pehle ka sab clear karo
+            feedContainer.innerHTML = ''; 
 
-            // Dummy posts data (Baad mein ye Database se aayega)
+            // Yeh data baad mein Cloudinary / Firebase se aayega
             const dummyPosts = [
-                { name: "Rohit Sharma", text: "Match ready! 🏏", likes: "1.2M" },
-                { name: "Neha_Tech", text: "Building my first PWA app 💻", likes: "450" },
-                { name: "Business_Hub", text: "We are hiring! 5 Vacancies available.", likes: "89" },
-                { name: currentUserName, text: "Just joined Roasify Super App!", likes: "12" }
+                { name: "Rohit Sharma", text: "Ready for the big match! 🏏", likes: "1.2M", verify: true },
+                { name: "Tech_Business", text: "New gadgets in our store. Check out the link! 💻", likes: "450", verify: false },
+                { name: currentUserName, text: "Loving the new Roasify Super App!", likes: "12", verify: false },
+                { name: "Foodie_Lover", text: "Best pizza in town 🍕", likes: "89", verify: false }
             ];
 
-            let adSlotCounter = 1;
+            let adCounter = 1;
 
             dummyPosts.forEach((post, index) => {
                 let initial = post.name.charAt(0).toUpperCase();
+                let verifyTick = post.verify ? `<i class="fa-solid fa-circle-check text-blue-500 text-xs ml-1"></i>` : '';
                 
-                // HTML for single post
                 let postHTML = `
                 <article class="w-full mb-4 border-b border-gray-800 pb-4">
                     <div class="flex justify-between items-center p-3">
                         <div class="flex items-center gap-3">
                             <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center font-bold">${initial}</div>
-                            <span class="font-bold text-sm">${post.name}</span>
+                            <span class="font-bold text-sm">${post.name} ${verifyTick}</span>
                         </div>
                         <i class="fa-solid fa-ellipsis text-gray-400"></i>
                     </div>
                     
-                    <div class="w-full h-80 bg-gray-900 flex items-center justify-center border-y border-gray-800 cursor-pointer relative" onclick="if(currentUserPremiumStatus !== 'true') openSmartLinkAd()">
-                        <span class="text-gray-500 flex flex-col items-center text-center px-4">
+                    <div class="w-full h-80 bg-gray-900 flex items-center justify-center border-y border-gray-800 cursor-pointer" onclick="openSmartLinkAd()">
+                        <span class="text-gray-500 flex flex-col items-center text-center">
                             <i class="fa-solid fa-image text-4xl mb-2"></i>
-                            [ Image / Video Area ]
+                            User Content Area
                         </span>
                     </div>
 
                     <div class="flex justify-between p-3 text-2xl">
                         <div class="flex gap-4">
-                            <i class="fa-regular fa-heart text-white hover:text-red-500 cursor-pointer"></i>
-                            <i class="fa-regular fa-comment text-white cursor-pointer"></i>
+                            <i class="fa-regular fa-heart text-white"></i>
+                            <i class="fa-regular fa-comment text-white"></i>
+                            <i class="fa-regular fa-paper-plane text-white"></i>
                         </div>
-                        <i class="fa-regular fa-bookmark text-white cursor-pointer"></i>
+                        <i class="fa-regular fa-bookmark text-white"></i>
                     </div>
                     
                     <div class="px-3">
@@ -193,20 +187,96 @@
                 
                 feedContainer.innerHTML += postHTML;
 
-                // Har 2 post ke baad ek Ad Container laga do (Sirf Free users ke liye)
+                // HAR 2 POST KE BAAD EK AD SLOT (Sirf Free User ke liye)
                 if ((index + 1) % 2 === 0 && currentUserPremiumStatus !== "true") {
-                    let adId = 'in-feed-ad-' + adSlotCounter;
-                    feedContainer.innerHTML += `<div id="${adId}" class="ad-container w-full text-center"></div>`;
-                    adSlotCounter++;
+                    let adId = 'feed-ad-' + adCounter;
+                    feedContainer.innerHTML += `
+                        <div class="text-xs text-gray-500 text-center pt-2">Sponsored</div>
+                        <div id="${adId}" class="ad-container"></div>
+                    `;
+                    // Ads Waterfall function call
+                    setTimeout(() => startAdsWaterfall(adId), 1000); 
+                    adCounter++;
                 }
             });
+        }
+    </script>
 
-            // Post render hone ke baad, un ad containers mein Fallback Ads load karna
-            if (currentUserPremiumStatus !== "true") {
-                for(let i = 1; i < adSlotCounter; i++) {
-                    loadInFeedAdWithFallback('in-feed-ad-' + i);
-                }
+    <!-- ========================================== -->
+    <!-- 🔥 ADS MANAGER (WATERFALL LOGIC) 🔥 -->
+    <!-- ========================================== -->
+    <script>
+        // GLOBAL ADS (Popunder, In-Page)
+        function initGlobalAds(isPremium) {
+            if (isPremium === "true") return; 
+
+            // Adsterra Popunder
+            let popScript = document.createElement('script');
+            popScript.src = "https://powderencouraged.com/fd/46/5e/fd465eacc9049ad8b3e1819bb7b1c0ac.js";
+            document.body.appendChild(popScript);
+
+            // Ezmob In-Page Push
+            window.adk_pdisp = { 'h': 'xml.qualiclicks.com', 'f': 1148016, 'a': 'pNG9', 'ps': [1, 5], 'cin': 4, 's': '', 'q': [], 't': 24 };
+            let pushScript = document.createElement('script');
+            pushScript.src = "//static.qualiclicks.com/tabu/display.js";
+            document.body.appendChild(pushScript);
+        }
+
+        // SMARTLINK (For Posts Click)
+        function openSmartLinkAd() {
+            if(currentUserPremiumStatus !== "true"){
+                window.open("https://powderencouraged.com/m7yj4ni4?key=a8c8428108a596b78c9be2f7e9427284", "_blank");
             }
+        }
+
+        // 🔥 THE WATERFALL SYSTEM (Ezmob -> Adsterra Fallback) 🔥
+        function startAdsWaterfall(containerId) {
+            let container = document.getElementById(containerId);
+            if (!container) return;
+
+            // Step 1: Show Loading & Try loading Ezmob Video Ad
+            container.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-gray-400 text-2xl mb-2"></i> <span class="text-xs text-gray-500">Loading Premium Ad...</span><div id="ezmob-${containerId}"></div>`;
+            
+            // Injecting Ezmob Prebid script specifically for this container
+            try {
+                let ezmobScript = document.createElement('script');
+                ezmobScript.innerHTML = `
+                    var pbjs = pbjs || {}; pbjs.que = pbjs.que || [];
+                    pbjs.que.push(function() {
+                        var adUnits = [{
+                            code: 'ezmob-${containerId}',
+                            mediaTypes: { video: { context: 'outstream', playerSize: [300, 250], renderer: { url: 'https://docdn.ezmob.com/outstream_pb.js', render: function(bid){ OutstreamPlayerPB(bid, {displayMode: 'floating', transitions: true, vpaidMode: 2}); } } } },
+                            bids: [{ bidder: 'adkernel', params: { zoneId: 338010, host: 'cpm.ezmob.com' } }]
+                        }];
+                        pbjs.addAdUnits(adUnits);
+                        pbjs.requestBids({ bidsBackHandler: function(bidResponses) { 
+                            var bids = pbjs.getHighestCpmBids('ezmob-${containerId}');
+                            if(bids.length > 0) pbjs.renderAd(document, bids[0].adId);
+                        }});
+                    });
+                `;
+                container.appendChild(ezmobScript);
+            } catch(e) { console.log("Ezmob injection error", e); }
+
+            // Step 2: Fallback Timer (Check after 8 Seconds)
+            setTimeout(() => {
+                // Agar container ki height badhi nahi hai, matlab Ezmob fail ho gaya
+                if (container.clientHeight < 100 || container.innerHTML.includes("Loading Premium Ad")) {
+                    console.log("Waterfall Triggered: Ezmob failed, loading Adsterra Banner!");
+                    
+                    // Clear Container
+                    container.innerHTML = ''; 
+                    
+                    // Load Adsterra 300x250 Banner as Fallback
+                    let conf = document.createElement('script');
+                    conf.innerHTML = `atOptions = { 'key' : '2a5d40fcc1c73802296077dcb8af960f', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };`;
+                    container.appendChild(conf);
+                    
+                    let fallbackScript = document.createElement('script');
+                    fallbackScript.src = `https://powderencouraged.com/2a5d40fcc1c73802296077dcb8af960f/invoke.js`;
+                    container.appendChild(fallbackScript);
+                }
+            }, 8000); // 8 Seconds Timer
         }
     </script>
 </body>
