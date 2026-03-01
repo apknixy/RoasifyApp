@@ -17,185 +17,168 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
+    <!-- Razorpay Payment Gateway Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
     <style>
         body { background-color: #000; color: #fff; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent;}
         .hide { display: none !important; }
         .gradient-bg { background: linear-gradient(to bottom right, #f58529, #dd2a7b); }
         .ad-container { min-height: 250px; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: 1px solid #222; border-bottom: 1px solid #222; margin: 16px 0; width: 100%; overflow: hidden;}
         
-        /* Modals */
         .modal-bg { background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
         .premium-star { animation: pulseStar 1.5s infinite; text-shadow: 0 0 10px #FFD700; }
         @keyframes pulseStar { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        
+        #mediaPreviewArea { max-height: 200px; overflow: hidden; border-radius: 10px; margin-top: 10px; position: relative; }
+        #mediaPreviewArea img, #mediaPreviewArea video { width: 100%; height: auto; object-fit: cover; }
+        .remove-media { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); color: white; border-radius: 50%; width: 25px; height: 25px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+        
+        .progress-bar-bg { width: 100%; background-color: #333; border-radius: 10px; margin-top: 5px; height: 6px; overflow: hidden;}
+        .progress-bar-fill { height: 100%; background-color: #dd2a7b; width: 0%; transition: width 0.3s ease; }
+
+        /* Custom Toast Message Box */
+        #toastBox { transition: top 0.4s ease, opacity 0.4s ease; z-index: 1000; }
     </style>
 </head>
 <body class="h-screen flex flex-col overflow-hidden select-none">
 
-    <!-- ========================================== -->
-    <!-- 1. LOGIN SCREEN -->
-    <!-- ========================================== -->
+    <!-- CUSTOM TOAST MESSAGE BOX -->
+    <div id="toastBox" class="fixed top-[-100px] left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-600 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 flex items-center gap-3 w-max max-w-[90%]">
+        <i id="toastIcon" class="fa-solid fa-bell text-blue-400"></i>
+        <span id="toastMsg" class="text-sm font-bold">Message Here</span>
+    </div>
+
+    <!-- LOGIN SCREEN -->
     <div id="loginScreen" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center">
         <div class="w-24 h-24 rounded-full gradient-bg flex items-center justify-center mb-6 shadow-2xl">
             <span class="text-white text-5xl font-bold">R</span>
         </div>
         <h1 class="text-4xl font-bold text-white mb-2">Roasify</h1>
         <p class="text-gray-400 mb-10 text-sm text-center px-4">Business, Micro-Jobs, E-commerce & Social</p>
-        
-        <button onclick="signInWithGoogle()" class="bg-blue-600 text-white px-8 py-3 rounded-lg shadow-md font-bold text-lg flex items-center gap-3">
+        <button onclick="signInWithGoogle()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold flex items-center gap-3">
             <i class="fa-brands fa-google"></i> SIGN IN WITH GOOGLE
         </button>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 2. MAIN APP DASHBOARD -->
-    <!-- ========================================== -->
+    <!-- MAIN APP DASHBOARD -->
     <div id="mainApp" class="hide h-full flex flex-col relative">
-        
         <header class="flex justify-between items-center p-4 border-b border-gray-800 bg-black z-10">
             <h1 id="headerTitle" class="text-2xl font-bold">Roasify</h1>
             <div class="flex gap-5 text-2xl items-center">
-                <i class="fa-solid fa-crown text-yellow-500 cursor-pointer premium-star" onclick="openPremiumModal()" title="VIP Store"></i>
-                <i class="fa-solid fa-wallet text-gray-400 cursor-pointer" onclick="alert('Wallet Balance: ₹0.00')" title="Wallet"></i>
-                <i class="fa-brands fa-whatsapp text-green-500 cursor-pointer" onclick="alert('Business Chats')" title="Chats"></i>
+                <i class="fa-solid fa-crown text-yellow-500 cursor-pointer premium-star" onclick="document.getElementById('premiumModal').classList.remove('hide')"></i>
+                <i class="fa-solid fa-wallet text-gray-400 cursor-pointer" onclick="showToast('Wallet Balance: ₹0.00', 'info')"></i>
+                <i class="fa-brands fa-whatsapp text-green-500 cursor-pointer"></i>
             </div>
         </header>
 
-        <!-- TABS CONTENT AREA -->
-        <main class="flex-1 overflow-y-auto pb-20 scrollbar-hide bg-black relative" id="mainScrollArea">
-            
-            <!-- A. FEED TAB (Home) -->
+        <main class="flex-1 overflow-y-auto pb-20 bg-black" id="mainScrollArea">
             <div id="tab-home" class="w-full">
                 <!-- Create Post Box -->
                 <div class="p-4 border-b border-gray-800 bg-gray-900">
                     <div class="flex gap-3">
                         <div class="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center font-bold" id="postAvatarUI">U</div>
-                        <input type="text" id="postInputText" placeholder="Write a post or drop image URL..." class="bg-black text-white w-full rounded-full px-4 border border-gray-700 focus:outline-none focus:border-pink-500">
+                        <textarea id="postInputText" placeholder="Post your gig, picture or offer..." class="bg-black text-white w-full rounded-lg px-4 py-2 border border-gray-700 focus:outline-none focus:border-pink-500 resize-none h-14"></textarea>
                     </div>
+
+                    <!-- Media Preview Area -->
+                    <div id="mediaPreviewArea" class="hide">
+                        <div class="remove-media" onclick="removeMedia()"><i class="fa-solid fa-xmark"></i></div>
+                        <img id="imagePreview" class="hide" src="" alt="preview">
+                        <video id="videoPreview" class="hide" controls></video>
+                    </div>
+                    
+                    <div id="uploadStatusBox" class="hide mt-2">
+                        <p id="uploadStatusText" class="text-xs text-yellow-500 font-bold"><i class="fa-solid fa-circle-notch fa-spin"></i> Uploading to Cloudinary...</p>
+                        <div class="progress-bar-bg"><div id="uploadProgressBar" class="progress-bar-fill w-1/2"></div></div>
+                    </div>
+
                     <div class="flex justify-between mt-3 px-2">
-                        <div class="flex gap-4 text-gray-400">
-                            <i class="fa-solid fa-image cursor-pointer hover:text-white" onclick="alert('Cloudinary Image Upload coming next!')"></i>
-                            <i class="fa-solid fa-video cursor-pointer hover:text-white" onclick="alert('Video limits: Free 0, VIP 50GB, Pro 600GB')"></i>
-                            <i class="fa-solid fa-briefcase cursor-pointer hover:text-white" title="Post a Gig"></i>
+                        <div class="flex gap-5 text-gray-400 text-xl items-center">
+                            <input type="file" id="mediaUpload" accept="image/*,video/*" class="hide" onchange="handleFileSelect(event)">
+                            <i class="fa-solid fa-image cursor-pointer hover:text-white" onclick="document.getElementById('mediaUpload').click()"></i>
+                            <i class="fa-solid fa-video cursor-pointer hover:text-white" onclick="document.getElementById('mediaUpload').click()"></i>
+                            <i class="fa-solid fa-briefcase cursor-pointer hover:text-white"></i>
                         </div>
-                        <button onclick="createOriginalPost()" class="bg-blue-600 px-4 py-1 rounded text-sm font-bold">Post</button>
+                        <button id="postBtn" onclick="uploadAndCreatePost()" class="bg-blue-600 px-6 py-2 rounded-full text-sm font-bold shadow-lg shadow-blue-500/50">Post</button>
                     </div>
-                    <p class="text-xs text-gray-500 mt-2 text-right">Uploads left today: <span id="uploadsLeft">Loading...</span>/5</p>
+                    <p class="text-xs text-gray-500 mt-2 text-right">Uploads left today: <span id="uploadsLeft">0</span>/5</p>
                 </div>
 
-                <!-- ORIGINAL DYNAMIC FEED (Firebase) -->
+                <!-- ORIGINAL DYNAMIC FEED -->
                 <div id="realFeedContainer" class="w-full">
-                    <div class="text-center py-10 text-gray-500"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><br>Loading original feed...</div>
+                    <div class="text-center py-10 text-gray-500"><i class="fa-solid fa-spinner fa-spin text-2xl mb-2"></i><br>Loading feed...</div>
                 </div>
             </div>
-
-            <!-- B. JOBS & OFFERS TAB -->
-            <div id="tab-jobs" class="w-full hide p-4">
-                <h2 class="text-xl font-bold mb-4">Micro-Jobs & Business Offers</h2>
-                
-                <!-- Coupon Demo -->
-                <div class="bg-gradient-to-r from-orange-500 to-red-500 rounded-lg p-4 mb-4">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h3 class="font-bold text-lg">Sharma Electronics</h3>
-                            <p class="text-xs text-white">Visit physical shop for 20% OFF!</p>
-                        </div>
-                        <div class="bg-white text-black font-bold px-3 py-1 rounded border-dashed border-2 border-black">
-                            REDEEM
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Job Post Demo -->
-                <div class="bg-gray-900 border border-gray-800 rounded-lg p-4">
-                    <h3 class="font-bold text-lg">Delivery Executive Needed</h3>
-                    <p class="text-sm text-gray-400 mb-2"><i class="fa-solid fa-location-dot"></i> New Delhi | 5 Vacancies | 12 Applicants</p>
-                    <button class="w-full bg-blue-600 py-2 rounded font-bold mt-2" onclick="openJobApplyModal()">Apply Now</button>
-                </div>
-            </div>
-
-            <!-- C. E-COMMERCE TAB -->
-            <div id="tab-shop" class="w-full hide p-4">
-                <h2 class="text-xl font-bold mb-4">Global Shop</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <!-- Product Demo -->
-                    <div class="bg-gray-900 border border-gray-800 rounded-lg p-3">
-                        <div class="w-full h-32 bg-gray-800 rounded mb-2 flex items-center justify-center"><i class="fa-solid fa-shoe-prints text-3xl text-gray-600"></i></div>
-                        <h3 class="font-bold">Nike Air Max</h3>
-                        <p class="text-green-500 font-bold">₹4,999 <span class="text-xs text-gray-500 line-through">$80</span></p>
-                        <button class="w-full bg-green-600 py-1 rounded font-bold mt-2 text-sm" onclick="buyViaWhatsApp('Nike Air Max', '4999', '+919876543210')"><i class="fa-brands fa-whatsapp"></i> Get it</button>
-                    </div>
-                </div>
-            </div>
-
         </main>
 
         <!-- BOTTOM NAV -->
         <nav class="flex justify-around items-center p-3 bg-black border-t border-gray-800 fixed bottom-0 w-full text-2xl z-20 pb-4">
-            <i class="fa-solid fa-house text-white cursor-pointer nav-icon" onclick="switchTab('tab-home', this)"></i>
-            <i class="fa-solid fa-map-location-dot text-gray-500 cursor-pointer nav-icon" onclick="alert('Map View: Loading Google Maps API...')"></i>
-            <i class="fa-solid fa-briefcase text-gray-500 cursor-pointer nav-icon" onclick="switchTab('tab-jobs', this)"></i>
-            <i class="fa-solid fa-store text-gray-500 cursor-pointer nav-icon" onclick="switchTab('tab-shop', this)"></i>
-            <div class="w-8 h-8 rounded-full border-2 border-gray-500 bg-gray-800 flex justify-center items-center cursor-pointer nav-icon" onclick="alert('Profile Dashboard Opening...')">
+            <i class="fa-solid fa-house text-white cursor-pointer"></i>
+            <i class="fa-solid fa-map-location-dot text-gray-500 cursor-pointer" onclick="showToast('Maps View Coming', 'info')"></i>
+            <i class="fa-solid fa-briefcase text-gray-500 cursor-pointer"></i>
+            <i class="fa-solid fa-store text-gray-500 cursor-pointer"></i>
+            <div class="w-8 h-8 rounded-full border-2 border-gray-500 bg-gray-800 flex justify-center items-center cursor-pointer" onclick="showToast('Profile Section Loading...', 'info')">
                 <span id="navAvatar" class="text-xs font-bold text-white">U</span>
             </div>
         </nav>
     </div>
 
-    <!-- ========================================== -->
-    <!-- MODALS (PREMIUM, JOBS) -->
-    <!-- ========================================== -->
-    
-    <!-- Premium Subscription Modal -->
+    <!-- VIP MODAL (PAYMENT SYSTEM) -->
     <div id="premiumModal" class="absolute inset-0 z-50 modal-bg hide flex items-center justify-center p-4">
         <div class="bg-gray-900 w-full max-w-md rounded-xl border border-gray-700 p-6 relative">
-            <i class="fa-solid fa-xmark absolute top-4 right-4 text-2xl cursor-pointer" onclick="closePremiumModal()"></i>
-            <h2 class="text-2xl font-bold text-center mb-4 text-yellow-500"><i class="fa-solid fa-crown"></i> VIP Upgrade</h2>
-            
+            <i class="fa-solid fa-xmark absolute top-4 right-4 text-2xl cursor-pointer" onclick="document.getElementById('premiumModal').classList.add('hide')"></i>
+            <h2 class="text-2xl font-bold text-center mb-4 text-yellow-500"><i class="fa-solid fa-crown"></i> VIP Store</h2>
             <div class="space-y-3">
-                <div class="border border-blue-500 rounded p-3 flex justify-between items-center bg-black cursor-pointer">
+                <div class="border border-blue-500 rounded p-3 flex justify-between items-center bg-black cursor-pointer hover:bg-gray-800" onclick="startPayment(39, 'Blue Tick Basic')">
                     <div><p class="font-bold text-blue-400">Blue Tick</p><p class="text-xs text-gray-400">Basic Verification</p></div>
-                    <div class="text-right"><p class="font-bold">₹39<span class="text-xs">/mo</span></p></div>
+                    <div class="text-right"><p class="font-bold text-blue-400 bg-blue-900 bg-opacity-30 px-3 py-1 rounded">Buy ₹39</p></div>
                 </div>
-                
-                <div class="border border-green-500 rounded p-3 flex justify-between items-center bg-black cursor-pointer">
-                    <div><p class="font-bold text-green-400">Ad-Free + 50GB</p><p class="text-xs text-gray-400">Remove Ads, Add Videos</p></div>
-                    <div class="text-right"><p class="font-bold">₹99<span class="text-xs">/mo</span></p></div>
+                <div class="border border-green-500 rounded p-3 flex justify-between items-center bg-black cursor-pointer hover:bg-gray-800" onclick="startPayment(99, 'Ad-Free + 50GB')">
+                    <div><p class="font-bold text-green-400">Ad-Free + 50GB</p><p class="text-xs text-gray-400">Remove Ads, Upload Videos</p></div>
+                    <div class="text-right"><p class="font-bold text-green-400 bg-green-900 bg-opacity-30 px-3 py-1 rounded">Buy ₹99</p></div>
                 </div>
-
-                <div class="border border-yellow-500 rounded p-3 flex justify-between items-center bg-yellow-900 bg-opacity-20 cursor-pointer relative overflow-hidden">
+                <div class="border border-yellow-500 rounded p-4 flex justify-between items-center bg-yellow-900 bg-opacity-20 cursor-pointer relative overflow-hidden" onclick="startPayment(699, 'VIP STAR Combo')">
                     <div class="absolute -right-4 -top-4 w-16 h-16 bg-yellow-500 rounded-full opacity-20 premium-star"></div>
-                    <div><p class="font-bold text-yellow-500">VIP STAR (Combo)</p><p class="text-xs text-gray-400">Black Round Star, Unlimited, Ad-Free</p></div>
-                    <div class="text-right"><p class="font-bold">₹699<span class="text-xs">/mo</span></p><p class="text-xs text-red-400 line-through">1st Month Free</p></div>
+                    <div><p class="font-bold text-yellow-500 text-lg">VIP STAR <i class="fa-solid fa-star"></i></p><p class="text-xs text-gray-300">Unlimited Everything, Zero Ads</p></div>
+                    <div class="text-right"><p class="font-bold text-white bg-yellow-600 px-4 py-2 rounded shadow-lg">Buy ₹699</p></div>
                 </div>
             </div>
-            <button class="w-full bg-yellow-600 text-white font-bold py-3 rounded mt-4" onclick="processPayment()">Continue to Payment</button>
         </div>
     </div>
 
-    <!-- Job Apply Modal -->
-    <div id="jobModal" class="absolute inset-0 z-50 modal-bg hide flex flex-col items-center justify-end">
-        <div class="bg-gray-900 w-full h-5/6 rounded-t-xl border-t border-gray-700 p-6 overflow-y-auto">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold">Apply for Micro-Job</h2>
-                <i class="fa-solid fa-xmark text-2xl cursor-pointer" onclick="document.getElementById('jobModal').classList.add('hide')"></i>
-            </div>
-            <input type="text" placeholder="Full Name" class="w-full bg-black border border-gray-700 p-3 rounded mb-3">
-            <input type="email" placeholder="Email" class="w-full bg-black border border-gray-700 p-3 rounded mb-3">
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <input type="text" placeholder="Village/City" class="w-full bg-black border border-gray-700 p-3 rounded">
-                <input type="text" placeholder="State" class="w-full bg-black border border-gray-700 p-3 rounded">
-            </div>
-            <textarea placeholder="Education & Current Position..." class="w-full bg-black border border-gray-700 p-3 rounded mb-3 h-24"></textarea>
-            <button class="w-full bg-gray-800 border border-gray-600 py-3 rounded mb-3 text-sm"><i class="fa-solid fa-file-pdf text-red-500"></i> Upload Resume (PDF)</button>
-            <button class="w-full bg-blue-600 py-3 rounded font-bold" onclick="alert('Application sent to Business Inbox!')">Submit Application</button>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- 🔥 FIREBASE & APP LOGIC 🔥 -->
-    <!-- ========================================== -->
     <script>
-        // -- Firebase Config (Original) --
+        // ==========================================
+        // 🔥 CUSTOM TOAST MESSAGE SYSTEM
+        // ==========================================
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toastBox');
+            const icon = document.getElementById('toastIcon');
+            document.getElementById('toastMsg').innerText = message;
+            
+            if(type === 'error') { icon.className = "fa-solid fa-circle-exclamation text-red-500"; }
+            else if(type === 'info') { icon.className = "fa-solid fa-circle-info text-blue-400"; }
+            else { icon.className = "fa-solid fa-circle-check text-green-500"; }
+
+            toast.style.top = '20px';
+            toast.style.opacity = '1';
+
+            setTimeout(() => {
+                toast.style.top = '-100px';
+                toast.style.opacity = '0';
+            }, 3000);
+        }
+
+        // ==========================================
+        // 🔥 1. CLOUDINARY UPLOAD SETTINGS
+        // ==========================================
+        // AAPKE ASLI CLOUDINARY CREDENTIALS 🚀
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dhy28gbtx/auto/upload"; 
+        const UPLOAD_PRESET = "h5x3jurh"; 
+
+        // ==========================================
+        // 🔥 2. FIREBASE CONFIG 
+        // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyCatxgsLqijsj1o1BXTrJqAST02lPWa4SY",
             authDomain: "roasify-2b050.firebaseapp.com",
@@ -206,13 +189,8 @@
         const auth = firebase.auth();
         const db = firebase.database();
 
-        // -- Global State --
-        let currentUser = null;
-        let userData = null;
-        let todayPostsCount = 0;
-        let lastPostDate = "";
+        let currentUser = null, userData = null, todayPostsCount = 0, selectedMediaFile = null;
 
-        // -- AUTH LISTENER --
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
@@ -221,12 +199,13 @@
                     if (userData) {
                         document.getElementById('loginScreen').classList.add('hide');
                         document.getElementById('mainApp').classList.remove('hide');
-                        
                         document.getElementById('postAvatarUI').innerText = userData.name.charAt(0).toUpperCase();
                         document.getElementById('navAvatar').innerText = userData.name.charAt(0).toUpperCase();
 
                         if(userData.VIP_Star === "true"){
                             document.getElementById('headerTitle').innerHTML = 'Roasify <i class="fa-solid fa-star text-yellow-500 text-sm premium-star"></i>';
+                        } else {
+                            document.getElementById('headerTitle').innerHTML = 'Roasify';
                         }
                         
                         checkUploadLimits();
@@ -236,122 +215,166 @@
                 });
             } else {
                 document.getElementById('loginScreen').classList.remove('hide');
-                document.getElementById('mainApp').classList.add('hide');
             }
         });
 
         function signInWithGoogle() {
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).then((result) => {
-                db.ref('Users/' + result.user.uid).update({
-                    name: result.user.displayName,
-                    email: result.user.email,
-                    VIP_Star: "false" 
+            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then((res) => {
+                db.ref('Users/' + res.user.uid).update({
+                    name: res.user.displayName, email: res.user.email, VIP_Star: "false" 
                 });
-            }).catch(err => alert("Login Error: " + err.message));
+                showToast("Login Successful!", "success");
+            }).catch(err => showToast("Login Error: " + err.message, "error"));
         }
 
-        // -- UPLOAD LIMIT LOGIC (5/Day for Free) --
         function checkUploadLimits() {
             let today = new Date().toDateString();
-            if(userData.lastPostDate !== today) {
-                todayPostsCount = 0; // Reset counter for new day
-            } else {
-                todayPostsCount = userData.todayPostsCount || 0;
-            }
+            todayPostsCount = (userData.lastPostDate === today) ? (userData.todayPostsCount || 0) : 0;
             document.getElementById('uploadsLeft').innerText = (5 - todayPostsCount);
         }
 
-        function createOriginalPost() {
-            if(!userData) return;
-            
-            // Check Limits
-            if(userData.VIP_Star !== "true" && todayPostsCount >= 5) {
-                alert("Upload Limit Reached! (5/day).\nPlease watch a Reward Ad or Upgrade to VIP to post more.");
-                // Yahan Future mein AdMob/Unity ka Rewarded Video chalega
-                return;
+        // ==========================================
+        // 🔥 3. CLOUDINARY UPLOAD LOGIC
+        // ==========================================
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if(file.type.startsWith('video/') && (!userData || userData.VIP_Star !== "true")) {
+                showToast("Free users can't upload videos directly! Buy VIP.", "error");
+                event.target.value = ''; return;
             }
 
-            let text = document.getElementById('postInputText').value;
-            if(!text) return alert("Please write something!");
+            selectedMediaFile = file;
+            document.getElementById('mediaPreviewArea').classList.remove('hide');
+            const url = URL.createObjectURL(file);
+            if(file.type.startsWith('image/')) {
+                document.getElementById('imagePreview').src = url;
+                document.getElementById('imagePreview').classList.remove('hide');
+                document.getElementById('videoPreview').classList.add('hide');
+            } else {
+                document.getElementById('videoPreview').src = url;
+                document.getElementById('videoPreview').classList.remove('hide');
+                document.getElementById('imagePreview').classList.add('hide');
+            }
+        }
 
-            // Save to Firebase
-            let newPostRef = db.ref('Posts').push();
+        function removeMedia() {
+            selectedMediaFile = null;
+            document.getElementById('mediaUpload').value = '';
+            document.getElementById('mediaPreviewArea').classList.add('hide');
+        }
+
+        async function uploadAndCreatePost() {
+            if(!userData) return;
+            if(userData.VIP_Star !== "true" && todayPostsCount >= 5) return showToast("Upload Limit Reached (5/day).", "error");
+
+            let text = document.getElementById('postInputText').value;
+            if(!text && !selectedMediaFile) return showToast("Write something or add media!", "error");
+
+            document.getElementById('postBtn').innerText = "Posting...";
+            document.getElementById('postBtn').disabled = true;
+            let finalMediaUrl = "", mediaType = "text";
+
+            if(selectedMediaFile) {
+                document.getElementById('uploadStatusBox').classList.remove('hide');
+                mediaType = selectedMediaFile.type.startsWith('video/') ? 'video' : 'image';
+                
+                const formData = new FormData();
+                formData.append("file", selectedMediaFile);
+                formData.append("upload_preset", UPLOAD_PRESET);
+
+                try {
+                    const response = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
+                    const data = await response.json();
+                    
+                    if(data.secure_url) {
+                        finalMediaUrl = data.secure_url; 
+                    } else {
+                        throw new Error(data.error ? data.error.message : "Unknown error");
+                    }
+                } catch(error) {
+                    showToast("Upload Failed: " + error.message, "error");
+                    resetPostUI();
+                    return;
+                }
+            }
+
             let today = new Date().toDateString();
-            
-            newPostRef.set({
-                userId: currentUser.uid,
-                author: userData.name,
-                text: text,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
-                likes: 0,
+            db.ref('Posts').push().set({
+                userId: currentUser.uid, author: userData.name, text: text,
+                mediaUrl: finalMediaUrl, mediaType: mediaType,
+                timestamp: firebase.database.ServerValue.TIMESTAMP, likes: 0,
                 isVIP: userData.VIP_Star || "false"
             }).then(() => {
-                document.getElementById('postInputText').value = "";
-                // Update User Limit
                 todayPostsCount++;
-                db.ref('Users/' + currentUser.uid).update({
-                    todayPostsCount: todayPostsCount,
-                    lastPostDate: today
-                });
+                db.ref('Users/' + currentUser.uid).update({ todayPostsCount: todayPostsCount, lastPostDate: today });
+                resetPostUI();
+                showToast("Posted successfully!", "success");
             });
         }
 
-        // -- LOAD REAL FEED FROM FIREBASE --
+        function resetPostUI() {
+            document.getElementById('postInputText').value = "";
+            removeMedia();
+            document.getElementById('uploadStatusBox').classList.add('hide');
+            document.getElementById('postBtn').innerText = "Post";
+            document.getElementById('postBtn').disabled = false;
+        }
+
+        // ==========================================
+        // 🔥 4. LOAD REAL FEED 
+        // ==========================================
         function loadOriginalFeed() {
             db.ref('Posts').orderByChild('timestamp').limitToLast(20).on('value', (snapshot) => {
-                const feedContainer = document.getElementById('realFeedContainer');
-                feedContainer.innerHTML = ''; 
-                
+                const feed = document.getElementById('realFeedContainer');
+                feed.innerHTML = ''; 
                 let posts = [];
                 snapshot.forEach(child => { posts.push({id: child.key, ...child.val()}); });
-                posts.reverse(); // Newest first
+                posts.reverse(); 
 
                 if(posts.length === 0) {
-                    feedContainer.innerHTML = '<div class="text-center py-10 text-gray-500">No posts yet. Be the first!</div>';
+                    feed.innerHTML = '<div class="text-center py-10 text-gray-500">No posts yet. Be the first to post!</div>';
                     return;
                 }
 
                 let adCounter = 1;
-
                 posts.forEach((post, index) => {
                     let initial = post.author.charAt(0).toUpperCase();
-                    let vipBadge = post.isVIP === "true" ? `<i class="fa-solid fa-star text-yellow-500 text-xs ml-1"></i>` : '';
+                    let vipBadge = post.isVIP === "true" ? `<i class="fa-solid fa-star text-yellow-500 text-xs ml-1 premium-star"></i>` : '';
                     
-                    let postHTML = `
+                    let mediaHTML = "";
+                    if(post.mediaUrl && post.mediaUrl !== "") {
+                        if(post.mediaType === "image") {
+                            mediaHTML = `<img src="${post.mediaUrl}" class="w-full max-h-96 object-cover border-y border-gray-800" loading="lazy">`;
+                        } else if (post.mediaType === "video") {
+                            mediaHTML = `<video src="${post.mediaUrl}" controls class="w-full max-h-96 object-cover border-y border-gray-800"></video>`;
+                        }
+                    }
+
+                    feed.innerHTML += `
                     <article class="w-full mb-4 border-b border-gray-800 pb-4">
                         <div class="flex justify-between items-center p-3">
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3 cursor-pointer">
                                 <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center font-bold text-white">${initial}</div>
                                 <span class="font-bold text-sm">${post.author} ${vipBadge}</span>
                             </div>
-                            <i class="fa-solid fa-ellipsis text-gray-400"></i>
                         </div>
-                        
-                        <div class="px-3 pb-3">
-                            <p class="text-sm">${post.text}</p>
-                        </div>
-
-                        <div class="flex justify-between px-3 pt-2 border-t border-gray-900 text-xl text-gray-400">
-                            <div class="flex gap-6">
-                                <span class="cursor-pointer hover:text-red-500 flex items-center gap-1 text-sm"><i class="fa-regular fa-heart"></i> ${post.likes}</span>
+                        <div class="px-3 pb-2 text-sm">${post.text}</div>
+                        ${mediaHTML}
+                        <div class="flex justify-between px-3 pt-3 text-2xl text-gray-400">
+                            <div class="flex gap-5">
+                                <i class="fa-regular fa-heart cursor-pointer hover:text-red-500" onclick="showToast('Liked!', 'success')"></i>
                                 <i class="fa-regular fa-comment cursor-pointer hover:text-white"></i>
-                                <i class="fa-solid fa-retweet cursor-pointer hover:text-green-500"></i>
+                                <i class="fa-solid fa-share-nodes cursor-pointer hover:text-blue-500" onclick="navigator.clipboard.writeText(window.location.href); showToast('Link Copied!', 'success');"></i>
                             </div>
-                            <i class="fa-solid fa-share-nodes cursor-pointer hover:text-blue-500" onclick="alert('Share link generated!')"></i>
+                            <i class="fa-regular fa-bookmark cursor-pointer hover:text-white"></i>
                         </div>
                     </article>`;
-                    
-                    feedContainer.innerHTML += postHTML;
 
-                    // ADS WATERFALL (Every 3rd Post for Free Users)
                     if ((index + 1) % 3 === 0 && (!userData || userData.VIP_Star !== "true")) {
                         let adId = 'feed-ad-' + adCounter;
-                        feedContainer.innerHTML += `
-                            <div class="text-xs text-gray-600 text-center uppercase tracking-widest mt-2">Sponsored</div>
-                            <div id="${adId}" class="ad-container"></div>
-                        `;
-                        // Calling Waterfall exactly in that container
+                        feed.innerHTML += `<div class="text-[10px] text-gray-600 text-center uppercase tracking-widest mt-2">Sponsored</div><div id="${adId}" class="ad-container"></div>`;
                         setTimeout(() => startAdsWaterfall(adId), 500); 
                         adCounter++;
                     }
@@ -359,92 +382,73 @@
             });
         }
 
-        // -- UI HELPERS --
-        function switchTab(tabId, element) {
-            document.getElementById('tab-home').classList.add('hide');
-            document.getElementById('tab-jobs').classList.add('hide');
-            document.getElementById('tab-shop').classList.add('hide');
-            document.getElementById(tabId).classList.remove('hide');
-            
-            document.querySelectorAll('.nav-icon').forEach(icon => icon.classList.replace('text-white', 'text-gray-500'));
-            element.classList.replace('text-gray-500', 'text-white');
-        }
+        // ==========================================
+        // 🔥 5. PAYMENT SYSTEM (RAZORPAY INTEGRATION)
+        // ==========================================
+        function startPayment(amount, planName) {
+            if(!currentUser) return showToast("Please login first", "error");
+            document.getElementById('premiumModal').classList.add('hide');
+            showToast(`Opening Payment Gateway for ₹${amount}...`, "info");
 
-        function openPremiumModal() { document.getElementById('premiumModal').classList.remove('hide'); }
-        function closePremiumModal() { document.getElementById('premiumModal').classList.add('hide'); }
-        function openJobApplyModal() { document.getElementById('jobModal').classList.remove('hide'); }
-        
-        function buyViaWhatsApp(product, price, number) {
-            let msg = encodeURIComponent(`Hi, I want to buy ${product} for ₹${price} from Roasify App.`);
-            window.open(`https://wa.me/${number}?text=${msg}`, '_blank');
-        }
-        function processPayment() {
-            alert("Connecting to Payment Gateway...\n\n(Note: In next update, Razorpay API will trigger here to upgrade account to VIP Star).");
-            closePremiumModal();
+            // Razorpay Options
+            var options = {
+                "key": "rzp_test_YOUR_TEST_KEY_HERE", // Replace with your Real API Key later
+                "amount": amount * 100, // Amount in paise
+                "currency": "INR",
+                "name": "Roasify Super App",
+                "description": "Upgrade to " + planName,
+                "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/192px-Instagram_logo_2016.svg.png",
+                "handler": function (response) {
+                    // PAYMENT SUCCESSFUL 💰🔥
+                    showToast("Payment Successful! Upgrading to VIP...", "success");
+                    
+                    // Update Database
+                    db.ref('Users/' + currentUser.uid).update({
+                        VIP_Star: "true"
+                    }).then(() => {
+                        showToast("🎉 Welcome to VIP! Ads Removed.", "success");
+                        // 1 second baad page refresh karein taaki ads gayab ho jayein aur Star lag jaye
+                        setTimeout(() => window.location.reload(), 1500);
+                    });
+                },
+                "prefill": {
+                    "name": userData.name,
+                    "email": currentUser.email,
+                },
+                "theme": {
+                    "color": "#dd2a7b"
+                }
+            };
+            var rzp1 = new Razorpay(options);
+            rzp1.on('payment.failed', function (response){
+                showToast("Payment Failed or Cancelled.", "error");
+            });
+            rzp1.open();
         }
     </script>
 
-    <!-- ========================================== -->
-    <!-- 🔥 ADS WATERFALL SYSTEM (Original Logic) 🔥 -->
-    <!-- ========================================== -->
+    <!-- ADS WATERFALL SCRIPT -->
     <script>
         function initGlobalAds(isPremium) {
-            if (isPremium === "true") return; // No ads for VIP
-            
-            // Popunder & Social Bar (Background setup)
+            if (isPremium === "true") return; 
             let s1 = document.createElement('script'); s1.src = "https://powderencouraged.com/fd/46/5e/fd465eacc9049ad8b3e1819bb7b1c0ac.js"; document.body.appendChild(s1);
             let s2 = document.createElement('script'); s2.src = "https://powderencouraged.com/09/61/b5/0961b550aa00a4b6c5823c89a156caf5.js"; document.body.appendChild(s2);
-            window.adk_pdisp = { 'h': 'xml.qualiclicks.com', 'f': 1148016, 'a': 'pNG9', 'ps': [1, 5], 'cin': 4, 's': '', 'q': [], 't': 24 };
-            let s3 = document.createElement('script'); s3.src = "//static.qualiclicks.com/tabu/display.js"; document.body.appendChild(s3);
         }
-
-        // Smart Waterfall System for Feed Ads
         function startAdsWaterfall(containerId) {
             let container = document.getElementById(containerId);
             if (!container) return;
-
-            // 1. Show Loading UI
-            container.innerHTML = `
-                <div class="flex flex-col items-center justify-center h-full text-gray-500">
-                    <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3 text-pink-500"></i>
-                    <p class="text-sm font-bold">Loading Premium Ad...</p>
-                </div>
-                <div id="ezmob-${containerId}"></div>
-            `;
-
-            // 2. Try Loading Ezmob Video Ad (Code injected)
+            container.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-gray-400 text-2xl mb-2"></i><div id="ezmob-${containerId}"></div>`;
             try {
-                let ezmobScript = document.createElement('script');
-                ezmobScript.innerHTML = `
-                    var pbjs = pbjs || {}; pbjs.que = pbjs.que || [];
-                    pbjs.que.push(function() {
-                        var adUnits = [{
-                            code: 'ezmob-${containerId}',
-                            mediaTypes: { video: { context: 'outstream', playerSize: [300, 250], renderer: { url: 'https://docdn.ezmob.com/outstream_pb.js', render: function(bid){ OutstreamPlayerPB(bid, {displayMode: 'floating', transitions: true, vpaidMode: 2}); } } } },
-                            bids: [{ bidder: 'adkernel', params: { zoneId: 338010, host: 'cpm.ezmob.com' } }]
-                        }];
-                        pbjs.addAdUnits(adUnits);
-                        pbjs.requestBids({ bidsBackHandler: function(bidResponses) { 
-                            var bids = pbjs.getHighestCpmBids('ezmob-${containerId}');
-                            if(bids.length > 0) pbjs.renderAd(document, bids[0].adId);
-                        }});
-                    });
-                `;
-                container.appendChild(ezmobScript);
+                let ezScript = document.createElement('script');
+                ezScript.innerHTML = `var pbjs = pbjs || {}; pbjs.que = pbjs.que || []; pbjs.que.push(function() { pbjs.addAdUnits([{ code: 'ezmob-${containerId}', mediaTypes: { video: { context: 'outstream', playerSize: [300, 250], renderer: { url: 'https://docdn.ezmob.com/outstream_pb.js', render: function(bid){ OutstreamPlayerPB(bid, {displayMode: 'floating', transitions: true, vpaidMode: 2}); } } } }, bids: [{ bidder: 'adkernel', params: { zoneId: 338010, host: 'cpm.ezmob.com' } }] }]); pbjs.requestBids({ bidsBackHandler: function(bidResponses) { var bids = pbjs.getHighestCpmBids('ezmob-${containerId}'); if(bids.length > 0) pbjs.renderAd(document, bids[0].adId); }}); });`;
+                container.appendChild(ezScript);
             } catch(e) {}
-
-            // 3. FALLBACK TIMER (If Ezmob fails after 7 seconds, show Adsterra)
             setTimeout(() => {
-                if (container.clientHeight < 100 || container.innerHTML.includes("Loading Premium Ad")) {
-                    console.log("Waterfall: Ezmob failed, Switching to Adsterra in " + containerId);
+                if (container.clientHeight < 100) {
                     container.innerHTML = ''; 
-                    
-                    let conf = document.createElement('script');
-                    conf.innerHTML = `atOptions = { 'key' : '2a5d40fcc1c73802296077dcb8af960f', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };`;
+                    let conf = document.createElement('script'); conf.innerHTML = `atOptions = { 'key' : '2a5d40fcc1c73802296077dcb8af960f', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };`;
                     container.appendChild(conf);
-                    
-                    let fallbackScript = document.createElement('script');
-                    fallbackScript.src = `https://powderencouraged.com/2a5d40fcc1c73802296077dcb8af960f/invoke.js`;
+                    let fallbackScript = document.createElement('script'); fallbackScript.src = `https://powderencouraged.com/2a5d40fcc1c73802296077dcb8af960f/invoke.js`;
                     container.appendChild(fallbackScript);
                 }
             }, 7000); 
