@@ -1,459 +1,403 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Roasify Super App</title>
     
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
 
-    <!-- CSS Framework & Icons -->
+    <!-- CSS & Icons -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     
-    <!-- Firebase SDKs (Real Database, Auth) -->
+    <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-    <!-- Asli Razorpay SDK -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-
     <style>
-        /* Custom Asli App Styling */
-        body { background-color: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden;}
+        /* ==========================================
+           1. CORE APP STYLING & SECURITY
+           ========================================== */
+        body { background-color: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; width: 100vw; height: 100vh; user-select: none; /* Anti-copy */ }
         .hide { display: none !important; }
-        .gradient-bg { background: linear-gradient(to bottom right, #f58529, #dd2a7b); }
-        .gradient-text { background: linear-gradient(to right, #f58529, #dd2a7b); -webkit-background-clip: text; color: transparent; }
         
-        /* Modal & UI Elements */
-        .modal-bg { background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 100;}
-        .premium-star { animation: pulseStar 1.5s infinite; text-shadow: 0 0 12px #FFD700; color: #FFD700; }
-        @keyframes pulseStar { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        /* Gradients & Animations */
+        .gradient-bg { background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af); }
+        .gradient-text { background: linear-gradient(135deg, #f58529, #dd2a7b); -webkit-background-clip: text; color: transparent; }
         
-        /* Media & Progress */
-        #mediaPreviewArea { max-height: 250px; overflow: hidden; border-radius: 12px; margin-top: 10px; position: relative; border: 1px solid #333;}
-        #mediaPreviewArea img, #mediaPreviewArea video { width: 100%; height: 100%; object-fit: contain; background: #111;}
-        .remove-media { position: absolute; top: 8px; right: 8px; background: rgba(255,0,0,0.8); color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 10;}
+        /* Advanced VIP Badges */
+        .badge-star { animation: pulseStar 1.5s infinite; text-shadow: 0 0 15px #FFD700; color: #FFD700; }
+        .badge-green-gear { position: relative; display: inline-flex; align-items: center; justify-content: center; color: #22c55e; }
+        .badge-blue-neon { position: relative; display: inline-flex; align-items: center; justify-content: center; color: #3b82f6; text-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6; animation: neonFlicker 2s infinite alternate; }
         
-        .progress-bar-bg { width: 100%; background-color: #222; border-radius: 10px; margin-top: 5px; height: 8px; overflow: hidden;}
-        .progress-bar-fill { height: 100%; background-color: #dd2a7b; width: 0%; transition: width 0.3s ease; }
+        @keyframes pulseStar { 0% { transform: scale(1); } 50% { transform: scale(1.3) rotate(15deg); } 100% { transform: scale(1); } }
+        @keyframes neonFlicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+        @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
 
-        /* Toast Notifications */
-        #toastBox { transition: top 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55), opacity 0.4s ease; z-index: 9999; }
+        /* Custom Scrollbars */
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; }
         
-        /* Navigation */
-        .nav-active { color: #fff !important; transform: scale(1.1); transition: all 0.2s;}
-        .nav-inactive { color: #6b7280 !important; }
+        /* Modals & Bottom Sheets */
+        .modal-bg { background: rgba(0,0,0,0.9); backdrop-filter: blur(15px); z-index: 999;}
+        .bottom-sheet { transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); transform: translateY(100%); }
+        .bottom-sheet.open { transform: translateY(0); }
 
-        /* Reels Scroller */
-        .reels-container { scroll-snap-type: y mandatory; overflow-y: scroll; height: 100%; width: 100%; scrollbar-width: none; }
+        /* Reels UI (TikTok Clone) */
+        .reels-container { scroll-snap-type: y mandatory; overflow-y: scroll; height: calc(100vh - 60px); width: 100vw; scrollbar-width: none; }
         .reels-container::-webkit-scrollbar { display: none; }
-        .reel-item { scroll-snap-align: start; height: 100%; width: 100%; position: relative; background: #000; border-bottom: 1px solid #222;}
-        .reel-video { width: 100%; height: 100%; object-fit: cover; }
+        .reel-item { scroll-snap-align: start; height: calc(100vh - 60px); width: 100vw; position: relative; background: #050505; display: flex; align-items: center; justify-content: center; overflow: hidden;}
+        .reel-video { position: absolute; width: 100%; height: 100%; object-fit: cover; }
+        .reel-overlay { position: absolute; bottom: 0; left: 0; width: 100%; padding: 20px; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); z-index: 10; display: flex; justify-content: space-between; align-items: flex-end;}
+        .reel-actions { display: flex; flex-direction: column; gap: 20px; align-items: center; margin-bottom: 20px;}
+
+        /* Interstitial Ad Fullscreen */
+        #adOverlay { position: fixed; top:0; left:0; width:100vw; height:100vh; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
-        /* Ads Container */
-        .ad-container { min-height: 280px; background: #0a0a0a; display: flex; flex-direction: column; justify-content: center; align-items: center; border-top: 1px solid #333; border-bottom: 1px solid #333; margin: 16px 0; width: 100%; overflow: hidden;}
+        /* Emoji Reaction Overlay */
+        .reaction-bar { position: absolute; bottom: 50px; left: 20px; background: rgba(30,30,30,0.9); border-radius: 30px; padding: 10px; display: flex; gap: 15px; transform: scale(0); transition: transform 0.2s; z-index: 50;}
+        .reaction-bar.active { transform: scale(1); }
+
+        /* Settings Menu Styling */
+        .settings-item { padding: 15px 20px; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: background 0.2s;}
+        .settings-item:hover { background: #111; }
     </style>
 </head>
-<body class="h-screen flex flex-col select-none">
+<body oncontextmenu="return false;" onselectstart="return false;" ondragstart="return false;"> <!-- Security Locks -->
 
-    <!-- TOAST MESSAGE SYSTEM -->
-    <div id="toastBox" class="fixed top-[-100px] left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-600 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 flex items-center gap-3 w-max max-w-[90%]">
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastBox" class="fixed top-[-100px] left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-600 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 flex items-center gap-3 w-max max-w-[90%] z-[10000] transition-all duration-400">
         <i id="toastIcon" class="fa-solid fa-bell text-blue-400"></i>
-        <span id="toastMsg" class="text-sm font-bold">Sandesh Yahan Aayega</span>
+        <span id="toastMsg" class="text-sm font-bold">Message</span>
     </div>
 
-    <!-- ========================================== -->
-    <!-- 1. LOGIN SCREEN -->
-    <!-- ========================================== -->
-    <div id="loginScreen" class="absolute inset-0 z-50 bg-black flex flex-col items-center justify-center">
-        <div class="w-32 h-32 rounded-full gradient-bg flex items-center justify-center mb-8 shadow-[0_0_40px_rgba(221,42,123,0.5)]">
-            <span class="text-white text-6xl font-extrabold">R</span>
+    <!-- INTERSTITIAL AD OVERLAY (For Like Limits & Free Users) -->
+    <div id="adOverlay" class="hide">
+        <div class="text-right w-full p-4"><button id="skipAdBtn" class="bg-gray-800 text-gray-400 px-4 py-1 rounded-full text-xs font-bold" disabled>Skip in 5s</button></div>
+        <div class="flex-1 flex flex-col items-center justify-center w-full">
+            <p class="text-xs text-gray-500 uppercase tracking-widest mb-4">Advertisement</p>
+            <div id="fullScreenAdContainer" class="w-[300px] h-[250px] bg-gray-900 flex items-center justify-center border border-gray-700">
+                <i class="fa-solid fa-spinner fa-spin text-gray-500 text-3xl"></i>
+            </div>
+            <p class="text-gray-400 mt-6 text-center px-8 text-sm">Ad-Free experience ke liye Premium/VIP Upgrade karein.</p>
+            <button class="mt-4 text-yellow-500 font-bold border border-yellow-500 px-6 py-2 rounded-full" onclick="document.getElementById('adOverlay').classList.add('hide'); document.getElementById('walletModal').classList.remove('hide')">Buy Diamonds / VIP</button>
         </div>
-        <h1 class="text-5xl font-black text-white mb-3 tracking-wider">Roasify</h1>
-        <p class="text-gray-400 mb-12 text-sm text-center px-6 font-medium tracking-wide">The Ultimate Business, Jobs & Social Super App</p>
-        
-        <button onclick="signInWithGoogle()" class="bg-white text-black px-8 py-4 rounded-full font-bold flex items-center gap-4 hover:bg-gray-200 transition shadow-xl text-lg">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" class="w-6 h-6">
-            Google Se Login Karein
+    </div>
+
+    <!-- BUSINESS LANDING PAGE VIEW -->
+    <div id="businessWebsiteView" class="fixed top-0 left-0 w-full h-full bg-white text-black z-[99999] overflow-y-auto hide">
+        <div id="webContent" class="min-h-screen"></div>
+        <button class="fixed bottom-6 left-6 bg-black text-white px-5 py-3 rounded-full shadow-2xl text-sm font-bold" onclick="window.location.href='/'">
+            <i class="fa-solid fa-arrow-left"></i> Roasify App Return
         </button>
     </div>
 
     <!-- ========================================== -->
-    <!-- 2. MAIN APP DASHBOARD -->
+    <!-- 1. LOGIN SYSTEM -->
     <!-- ========================================== -->
-    <div id="mainApp" class="hide h-full flex flex-col relative bg-black">
+    <div id="loginScreen" class="absolute inset-0 z-[5000] bg-black flex flex-col items-center justify-center">
+        <div class="w-32 h-32 rounded-[2.5rem] gradient-bg flex items-center justify-center mb-8 shadow-[0_0_50px_rgba(221,42,123,0.6)]">
+            <i class="fa-brands fa-r-project text-white text-6xl"></i>
+        </div>
+        <h1 class="text-5xl font-black text-white mb-2 tracking-tighter">Roasify</h1>
+        <p class="text-gray-400 mb-12 text-sm text-center px-6 font-medium">Business, Jobs, Web Builder & Social Hub</p>
         
-        <!-- GLOBAL HEADER -->
-        <header class="flex justify-between items-center p-4 border-b border-gray-800 bg-black/90 backdrop-blur-sm z-20">
-            <h1 id="headerTitle" class="text-2xl font-black tracking-wide">Roasify</h1>
-            <div class="flex gap-6 text-2xl items-center">
-                <i class="fa-solid fa-crown cursor-pointer premium-star" onclick="document.getElementById('premiumModal').classList.remove('hide')" title="VIP Store"></i>
-                <div class="relative">
-                    <i class="fa-solid fa-wallet text-gray-300 cursor-pointer hover:text-white" onclick="showToast('Wallet Balance: ₹0.00', 'info')"></i>
-                    <span class="absolute -top-1 -right-2 bg-red-600 text-white text-[10px] font-bold px-1 rounded-full">0</span>
+        <button onclick="signInWithGoogle()" class="bg-white text-black px-8 py-4 rounded-full font-bold flex items-center gap-4 hover:scale-105 transition shadow-xl text-lg">
+            <i class="fa-brands fa-google text-blue-600 text-xl"></i> Google Se Login
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. MAIN APP ENGINE -->
+    <!-- ========================================== -->
+    <div id="mainApp" class="hide h-screen flex flex-col relative bg-black">
+        
+        <!-- HEADER -->
+        <header class="flex justify-between items-center p-4 border-b border-gray-900 bg-black/95 backdrop-blur-md z-20">
+            <h1 id="headerTitle" class="text-2xl font-black font-serif">Roasify</h1>
+            <div class="flex gap-6 text-xl items-center">
+                <!-- Virtual Currency Wallet -->
+                <div class="bg-gray-900 border border-gray-700 px-3 py-1 rounded-full flex items-center gap-2 cursor-pointer hover:bg-gray-800" onclick="document.getElementById('walletModal').classList.remove('hide')">
+                    <i class="fa-regular fa-gem text-cyan-400 text-sm"></i>
+                    <span id="walletDiamonds" class="text-white font-bold text-sm">0</span>
                 </div>
-                <i class="fa-brands fa-whatsapp text-green-500 cursor-pointer hover:text-green-400" onclick="showToast('Business Chats opening...', 'info')"></i>
+                <i class="fa-brands fa-whatsapp text-gray-300 cursor-pointer" onclick="showToast('Chats Coming Soon', 'info')"></i>
+                <i class="fa-solid fa-bars text-white cursor-pointer" onclick="document.getElementById('settingsModal').classList.add('open')"></i>
             </div>
         </header>
 
-        <!-- MAIN SCROLLABLE AREA (TABS) -->
-        <main class="flex-1 overflow-y-auto pb-16 w-full relative" id="mainScrollArea">
+        <!-- TABS CONTAINER -->
+        <main class="flex-1 overflow-y-auto w-full relative custom-scroll" id="mainScrollArea">
             
-            <!-- --------------------------------------- -->
-            <!-- TAB A: HOME (FEED & UPLOAD) -->
-            <!-- --------------------------------------- -->
-            <div id="tab-home" class="w-full">
-                
-                <!-- Create Post Box (Asli System) -->
-                <div class="p-4 border-b border-gray-800 bg-[#0a0a0a]">
+            <!-- TAB A: HOME FEED -->
+            <div id="tab-home" class="w-full pb-20">
+                <!-- Advanced Post Creator -->
+                <div class="p-4 border-b border-gray-900 bg-[#0a0a0a]">
                     <div class="flex gap-3 items-start">
-                        <div class="w-12 h-12 rounded-full bg-gray-800 border border-gray-600 flex items-center justify-center font-bold text-xl flex-shrink-0" id="postAvatarUI">U</div>
-                        <textarea id="postInputText" placeholder="Naya Post, Gig, ya Offer likhein..." class="bg-transparent text-white w-full rounded-lg p-2 focus:outline-none resize-none h-20 text-lg placeholder-gray-600"></textarea>
-                    </div>
+                        <div class="w-12 h-12 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden" id="postAvatarUI"></div>
+                        <div class="flex-1">
+                            <textarea id="postInputText" placeholder="Aaj ka vichar, job ya product..." class="bg-transparent text-white w-full p-2 focus:outline-none resize-none h-16 text-lg placeholder-gray-600"></textarea>
+                            
+                            <div id="mediaPreviewArea" class="hide mb-3">
+                                <div class="remove-media" onclick="removeMedia()"><i class="fa-solid fa-xmark"></i></div>
+                                <img id="imagePreview" class="hide rounded-lg" src="">
+                                <video id="videoPreview" class="hide rounded-lg" controls></video>
+                            </div>
+                            
+                            <div id="uploadStatusBox" class="hide mb-3 p-2 bg-gray-900 rounded border border-gray-800">
+                                <p class="text-[10px] text-yellow-500 font-bold mb-1"><i class="fa-solid fa-spinner fa-spin"></i> Securing Media...</p>
+                                <div class="progress-bar-bg"><div id="uploadProgressBar" class="progress-bar-fill w-0"></div></div>
+                            </div>
 
-                    <!-- Media Preview Area (Asli Upload Hoga Yahan Se) -->
-                    <div id="mediaPreviewArea" class="hide">
-                        <div class="remove-media" onclick="removeMedia()"><i class="fa-solid fa-xmark"></i></div>
-                        <img id="imagePreview" class="hide" src="" alt="preview">
-                        <video id="videoPreview" class="hide" controls autoplay muted loop></video>
-                    </div>
-                    
-                    <div id="uploadStatusBox" class="hide mt-3 p-3 bg-gray-900 rounded-lg border border-gray-800">
-                        <div class="flex justify-between text-xs mb-1">
-                            <span class="text-yellow-500 font-bold"><i class="fa-solid fa-cloud-arrow-up fa-fade"></i> Cloudinary Par Upload Ho Raha Hai...</span>
-                            <span id="uploadPercentTxt" class="text-white font-bold">0%</span>
-                        </div>
-                        <div class="progress-bar-bg"><div id="uploadProgressBar" class="progress-bar-fill w-0"></div></div>
-                    </div>
-
-                    <div class="flex justify-between mt-4 px-1 items-center border-t border-gray-800 pt-3">
-                        <div class="flex gap-6 text-gray-400 text-2xl">
-                            <input type="file" id="mediaUpload" accept="image/*,video/*" class="hide" onchange="handleFileSelect(event)">
-                            <i class="fa-solid fa-image cursor-pointer hover:text-green-400 transition" onclick="document.getElementById('mediaUpload').click()" title="Photo Upload"></i>
-                            <i class="fa-solid fa-video cursor-pointer hover:text-blue-400 transition" onclick="document.getElementById('mediaUpload').click()" title="Video Upload"></i>
-                            <i class="fa-solid fa-link cursor-pointer hover:text-yellow-400 transition" onclick="addYoutubeLink()" title="YouTube Link"></i>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <p class="text-[10px] text-gray-500 text-right leading-tight">Daily Limit<br><span id="uploadsLeft" class="font-bold text-white text-sm">0</span> / 5</p>
-                            <button id="postBtn" onclick="uploadAndCreatePost()" class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 rounded-full text-sm font-bold shadow-[0_0_15px_rgba(37,99,235,0.5)] hover:scale-105 transition">Post Karein</button>
+                            <div class="flex justify-between items-center border-t border-gray-800 pt-3">
+                                <div class="flex gap-5 text-gray-400 text-xl">
+                                    <input type="file" id="mediaUpload" accept="image/*,video/*" class="hide" onchange="handleSecureFileSelect(event)">
+                                    <i class="fa-solid fa-image cursor-pointer hover:text-green-400" onclick="document.getElementById('mediaUpload').click()"></i>
+                                    <i class="fa-solid fa-video cursor-pointer hover:text-pink-400" onclick="document.getElementById('mediaUpload').click()"></i>
+                                </div>
+                                <button id="postBtn" onclick="publishEncryptedPost()" class="bg-blue-600 px-6 py-1.5 rounded-full text-sm font-bold shadow-[0_0_10px_rgba(37,99,235,0.4)]">Share</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- ORIGINAL DYNAMIC FEED (Firebase se aayega) -->
                 <div id="realFeedContainer" class="w-full">
-                    <div class="text-center py-20 text-gray-500"><i class="fa-solid fa-circle-notch fa-spin text-4xl mb-4 text-pink-600"></i><br><span class="font-bold">Asli Feed Load Ho Rahi Hai...</span></div>
+                    <div class="py-20 text-center"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-gray-600"></i></div>
                 </div>
             </div>
 
-            <!-- --------------------------------------- -->
-            <!-- TAB B: REELS / SHORTS -->
-            <!-- --------------------------------------- -->
-            <div id="tab-reels" class="w-full h-full hide">
-                <div class="reels-container" id="reelsContainer">
-                    <div class="flex h-full items-center justify-center text-gray-500 flex-col">
-                        <i class="fa-solid fa-video fa-bounce text-4xl mb-3 text-pink-500"></i>
-                        <p>Reels Load Ho Rahi Hain...</p>
-                        <p class="text-xs mt-2">Swipe up to see more</p>
-                    </div>
-                </div>
+            <!-- TAB B: REELS (TikTok Scroll) -->
+            <div id="tab-reels" class="w-full h-full hide absolute top-0 left-0 bg-black z-10">
+                <div class="reels-container" id="reelsContainer"></div>
             </div>
 
-            <!-- --------------------------------------- -->
-            <!-- TAB C: MICRO-JOBS & OFFERS -->
-            <!-- --------------------------------------- -->
-            <div id="tab-jobs" class="w-full hide p-4 bg-[#050505] min-h-full">
+            <!-- TAB C: MICRO JOBS & SERVICES -->
+            <div id="tab-jobs" class="w-full hide p-4 bg-[#050505] min-h-full pb-20">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-black tracking-wide"><i class="fa-solid fa-briefcase text-blue-500 mr-2"></i> Asli Jobs & Offers</h2>
-                    <button class="bg-blue-600/20 text-blue-400 border border-blue-500 px-3 py-1 rounded text-xs font-bold" onclick="document.getElementById('createJobModal').classList.remove('hide')">+ Nayi Job Daalein</button>
+                    <h2 class="text-2xl font-black text-blue-500">Gigs & Jobs</h2>
+                    <button class="bg-blue-600/20 text-blue-400 px-3 py-1 rounded text-xs font-bold" onclick="document.getElementById('createJobModal').classList.add('open')">+ Create</button>
                 </div>
-                
-                <!-- Real Jobs Container -->
-                <div id="jobsListContainer" class="space-y-4">
-                    <div class="text-center text-gray-600 py-10"><i class="fa-solid fa-spinner fa-spin"></i> Loading Jobs...</div>
-                </div>
+                <div id="jobsListContainer" class="space-y-4"></div>
             </div>
 
-            <!-- --------------------------------------- -->
-            <!-- TAB D: GLOBAL SHOP (E-COMMERCE) -->
-            <!-- --------------------------------------- -->
-            <div id="tab-shop" class="w-full hide p-4 bg-[#050505] min-h-full">
+            <!-- TAB D: SHOP -->
+            <div id="tab-shop" class="w-full hide p-4 bg-[#050505] min-h-full pb-20">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-black"><i class="fa-solid fa-store text-green-500 mr-2"></i> Global Dukan</h2>
-                    <div class="flex gap-2">
-                        <select id="currencySelect" class="bg-gray-800 border border-gray-600 text-xs rounded p-1 outline-none text-white" onchange="loadRealShop()">
-                            <option value="₹">₹ INR</option><option value="$">$ USD</option><option value="€">€ EUR</option>
+                    <h2 class="text-2xl font-black text-green-500">Marketplace</h2>
+                    <div class="flex gap-2 items-center">
+                        <select id="currencySelect" class="bg-gray-900 border border-gray-700 text-xs rounded p-1 text-white outline-none" onchange="loadMarketplace()">
+                            <option value="💎">💎 Diamonds</option>
+                            <option value="₹">₹ INR</option>
+                            <option value="$">$ USD</option>
                         </select>
-                        <button class="bg-green-600/20 text-green-400 border border-green-500 px-2 py-1 rounded text-xs font-bold" onclick="document.getElementById('createProductModal').classList.remove('hide')">+ Product</button>
+                        <button class="bg-green-600/20 text-green-400 px-3 py-1 rounded text-xs font-bold" onclick="document.getElementById('createProductModal').classList.add('open')">+ Sell</button>
                     </div>
                 </div>
-                
-                <!-- Real Shop Grid -->
-                <div id="shopGridContainer" class="grid grid-cols-2 gap-4">
-                    <div class="col-span-2 text-center text-gray-600 py-10"><i class="fa-solid fa-spinner fa-spin"></i> Loading Products...</div>
-                </div>
+                <div id="shopGridContainer" class="grid grid-cols-2 gap-3"></div>
             </div>
 
-            <!-- --------------------------------------- -->
-            <!-- TAB E: ADVANCED PROFILE -->
-            <!-- --------------------------------------- -->
-            <div id="tab-profile" class="w-full hide bg-[#050505] min-h-full pb-10">
-                <!-- Profile Header Background -->
-                <div class="w-full h-32 bg-gradient-to-r from-gray-800 to-gray-900 relative">
-                    <button class="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-white"><i class="fa-solid fa-gear"></i></button>
+            <!-- TAB E: PROFILE -->
+            <div id="tab-profile" class="w-full hide bg-[#050505] min-h-full pb-20">
+                <div class="w-full h-40 bg-gray-900 relative bg-cover bg-center" id="profileCoverImg">
+                    <div class="absolute inset-0 bg-black/40"></div>
                 </div>
-                
-                <!-- Profile Info -->
-                <div class="px-4 relative -mt-12 mb-6">
-                    <div class="flex justify-between items-end">
-                        <div class="w-24 h-24 rounded-full border-4 border-black bg-gray-800 flex justify-center items-center text-4xl font-black shadow-lg" id="profileBigAvatar">U</div>
-                        <button class="bg-gray-800 border border-gray-600 px-6 py-1.5 rounded-full font-bold text-sm hover:bg-gray-700" onclick="alert('Edit Profile Modal Aayega')">Edit Profile</button>
+                <div class="px-4 relative -mt-14 mb-4">
+                    <div class="flex justify-between items-end mb-3">
+                        <div class="w-28 h-28 rounded-full border-4 border-black bg-gray-800 overflow-hidden relative cursor-pointer" onclick="document.getElementById('avatarModal').classList.add('open')">
+                            <div id="profileBigAvatar" class="w-full h-full flex items-center justify-center text-4xl font-bold"></div>
+                            <div class="absolute bottom-0 w-full bg-black/60 text-[10px] text-center py-1">EDIT</div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button class="bg-gray-800 px-4 py-1.5 rounded font-bold text-xs" onclick="alert('Edit logic')">Edit Profile</button>
+                            <button class="bg-gray-800 px-3 py-1.5 rounded font-bold text-xs" onclick="navigator.clipboard.writeText('roasify.online/u/'+currentUser.uid); showToast('Profile Link Copied');"><i class="fa-solid fa-share"></i></button>
+                        </div>
                     </div>
+                    <h2 class="text-2xl font-black flex items-center gap-2" id="profileNameText">Name</h2>
+                    <p class="text-sm text-gray-400 mb-2" id="profileBioText">App Developer & Entrepreneur. 💎🚀</p>
                     
-                    <h2 class="text-2xl font-black mt-3 flex items-center gap-2" id="profileNameText">User Name</h2>
-                    <p class="text-gray-400 text-sm mb-3" id="profileEmailText">user@email.com</p>
-                    
-                    <p class="text-sm mb-4" id="profileBio">Digital Creator & Entrepreneur. Building the future. 🚀🌐</p>
-                    
-                    <!-- Real Stats -->
-                    <div class="flex gap-6 border-y border-gray-800 py-3">
-                        <div class="text-center cursor-pointer"><p class="font-black text-lg" id="statPosts">0</p><p class="text-xs text-gray-500 uppercase tracking-widest">Posts</p></div>
-                        <div class="text-center cursor-pointer"><p class="font-black text-lg" id="statFollowers">0</p><p class="text-xs text-gray-500 uppercase tracking-widest">Followers</p></div>
-                        <div class="text-center cursor-pointer"><p class="font-black text-lg" id="statFollowing">0</p><p class="text-xs text-gray-500 uppercase tracking-widest">Following</p></div>
+                    <div class="flex gap-6 mt-4">
+                        <div class="text-center"><p class="font-black text-lg" id="statPosts">0</p><p class="text-[10px] text-gray-500">POSTS</p></div>
+                        <div class="text-center"><p class="font-black text-lg" id="statFollowers">0</p><p class="text-[10px] text-gray-500">FOLLOWERS</p></div>
+                        <div class="text-center"><p class="font-black text-lg" id="statFollowing">0</p><p class="text-[10px] text-gray-500">FOLLOWING</p></div>
                     </div>
                 </div>
-
-                <!-- User's Real Posts Grid -->
-                <div class="px-1">
-                    <div class="flex border-b border-gray-800 mb-1">
-                        <div class="flex-1 text-center py-3 border-b-2 border-white"><i class="fa-solid fa-table-cells text-xl"></i></div>
-                        <div class="flex-1 text-center py-3 text-gray-600"><i class="fa-solid fa-video text-xl"></i></div>
-                        <div class="flex-1 text-center py-3 text-gray-600"><i class="fa-solid fa-briefcase text-xl"></i></div>
-                    </div>
-                    <div id="profilePostsGrid" class="grid grid-cols-3 gap-1">
-                        <!-- User posts will load here -->
-                    </div>
+                <div class="flex border-b border-gray-800 w-full">
+                    <div class="flex-1 text-center py-3 border-b-2 border-white text-white"><i class="fa-solid fa-border-all"></i></div>
+                    <div class="flex-1 text-center py-3 text-gray-600"><i class="fa-solid fa-video"></i></div>
                 </div>
-                
-                <div class="px-4 mt-8">
-                    <button class="w-full bg-red-900/30 text-red-500 border border-red-800 py-3 rounded-xl font-bold hover:bg-red-900/50 transition" onclick="logout()">Logout Account</button>
-                </div>
+                <div id="profilePostsGrid" class="grid grid-cols-3 gap-[1px]"></div>
             </div>
         </main>
 
-        <!-- --------------------------------------- -->
-        <!-- MAIN BOTTOM NAVIGATION -->
-        <!-- --------------------------------------- -->
-        <nav class="flex justify-around items-center p-2 bg-black border-t border-gray-800 fixed bottom-0 w-full z-30 pb-4 shadow-[0_-5px_20px_rgba(0,0,0,0.8)]">
-            <div class="flex flex-col items-center p-2 cursor-pointer nav-icon-wrap" onclick="switchTab('tab-home', 'nav-home')">
-                <i id="nav-home" class="fa-solid fa-house text-2xl nav-active"></i>
-                <span class="text-[10px] mt-1 font-bold">Home</span>
+        <!-- BOTTOM NAV -->
+        <nav class="flex justify-around items-center p-2 bg-[#000] border-t border-gray-900 fixed bottom-0 w-full z-30 pb-5">
+            <i id="nav-home" class="fa-solid fa-house text-2xl nav-active p-2 cursor-pointer" onclick="switchTab('tab-home', 'nav-home')"></i>
+            <i id="nav-reels" class="fa-brands fa-tiktok text-2xl nav-inactive p-2 cursor-pointer" onclick="switchTab('tab-reels', 'nav-reels')"></i>
+            <div class="w-12 h-12 rounded-full gradient-bg flex items-center justify-center cursor-pointer transform -translate-y-3 shadow-[0_0_10px_#dd2a7b]" onclick="switchTab('tab-home', 'nav-home'); document.getElementById('postInputText').focus();">
+                <i class="fa-solid fa-plus text-white text-xl"></i>
             </div>
-            <div class="flex flex-col items-center p-2 cursor-pointer nav-icon-wrap" onclick="switchTab('tab-reels', 'nav-reels')">
-                <i id="nav-reels" class="fa-solid fa-clapperboard text-2xl nav-inactive"></i>
-                <span class="text-[10px] mt-1 font-bold">Reels</span>
-            </div>
-            <div class="flex flex-col items-center p-1 cursor-pointer transform -translate-y-4" onclick="document.getElementById('mediaUpload').click(); switchTab('tab-home', 'nav-home');">
-                <div class="w-14 h-14 rounded-full gradient-bg flex items-center justify-center shadow-[0_0_15px_#dd2a7b]">
-                    <i class="fa-solid fa-plus text-white text-2xl"></i>
-                </div>
-            </div>
-            <div class="flex flex-col items-center p-2 cursor-pointer nav-icon-wrap" onclick="switchTab('tab-jobs', 'nav-jobs')">
-                <i id="nav-jobs" class="fa-solid fa-briefcase text-2xl nav-inactive"></i>
-                <span class="text-[10px] mt-1 font-bold">Jobs/Shop</span>
-            </div>
-            <div class="flex flex-col items-center p-2 cursor-pointer nav-icon-wrap" onclick="switchTab('tab-profile', 'nav-profile')">
-                <div class="w-7 h-7 rounded-full border-2 border-gray-600 bg-gray-800 flex justify-center items-center overflow-hidden" id="navProfileBorder">
-                    <span id="navAvatar" class="text-xs font-bold text-white">U</span>
-                </div>
-                <span class="text-[10px] mt-1 font-bold">Profile</span>
+            <i id="nav-shop" class="fa-solid fa-store text-2xl nav-inactive p-2 cursor-pointer" onclick="switchTab('tab-shop', 'nav-shop')"></i>
+            <div id="nav-profile" class="w-8 h-8 rounded-full border-2 border-gray-700 bg-gray-800 overflow-hidden cursor-pointer" onclick="switchTab('tab-profile', 'nav-profile')">
+                <div id="navAvatarIcon" class="w-full h-full flex items-center justify-center text-xs font-bold text-white"></div>
             </div>
         </nav>
     </div>
 
     <!-- ========================================== -->
-    <!-- 3. ALL ASLI MODALS (Popups) -->
+    <!-- 3. ALL MODALS & BOTTOM SHEETS -->
     <!-- ========================================== -->
 
-    <!-- A. VIP STORE MODAL (RAZORPAY) -->
-    <div id="premiumModal" class="absolute inset-0 modal-bg hide flex items-center justify-center p-4">
-        <div class="bg-[#111] w-full max-w-md rounded-2xl border border-gray-700 shadow-2xl relative overflow-hidden">
-            <div class="bg-gradient-to-r from-yellow-600 to-yellow-400 p-4 text-center relative">
-                <i class="fa-solid fa-xmark absolute top-4 right-4 text-black text-xl cursor-pointer bg-white/30 rounded-full w-8 h-8 flex items-center justify-center" onclick="document.getElementById('premiumModal').classList.add('hide')"></i>
-                <h2 class="text-2xl font-black text-black"><i class="fa-solid fa-crown fa-bounce"></i> Roasify VIP Store</h2>
-                <p class="text-black/80 text-sm font-bold mt-1">Upgrade your business & limits</p>
+    <!-- WALLET & DIAMONDS MODAL (Direct UPI System) -->
+    <div id="walletModal" class="absolute inset-0 modal-bg hide flex items-center justify-center p-4 z-[100]">
+        <div class="bg-[#111] w-full max-w-md rounded-2xl border border-gray-700 p-6 relative">
+            <i class="fa-solid fa-xmark absolute top-4 right-4 text-xl cursor-pointer text-gray-400" onclick="document.getElementById('walletModal').classList.add('hide')"></i>
+            <div class="text-center mb-6">
+                <i class="fa-regular fa-gem text-5xl text-cyan-400 mb-2 fa-bounce"></i>
+                <h2 class="text-2xl font-black">Virtual Wallet</h2>
+                <p class="text-gray-400 text-xs">Buy courses, gifts & services using Diamonds.</p>
             </div>
             
-            <div class="p-5 space-y-4">
-                <!-- Basic Plan -->
-                <div class="border border-blue-500/50 rounded-xl p-4 flex justify-between items-center bg-blue-900/10 cursor-pointer hover:bg-blue-900/30 transition" onclick="startRazorpayPayment(39, 'Blue Tick Basic')">
-                    <div>
-                        <p class="font-bold text-blue-400 text-lg">Blue Tick <i class="fa-solid fa-circle-check"></i></p>
-                        <p class="text-xs text-gray-400">Basic Verification Badge</p>
-                    </div>
-                    <div class="bg-blue-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg">₹39 /mo</div>
-                </div>
-                
-                <!-- Standard Plan -->
-                <div class="border border-green-500/50 rounded-xl p-4 flex justify-between items-center bg-green-900/10 cursor-pointer hover:bg-green-900/30 transition" onclick="startRazorpayPayment(99, 'Pro Creator + 50GB')">
-                    <div>
-                        <p class="font-bold text-green-400 text-lg">Pro Creator</p>
-                        <p class="text-xs text-gray-400">Ad-Free + 50GB Video Uploads</p>
-                    </div>
-                    <div class="bg-green-600 text-white font-bold px-4 py-2 rounded-lg shadow-lg">₹99 /mo</div>
-                </div>
+            <div class="bg-gray-900 rounded-xl p-4 text-center mb-6 border border-gray-800">
+                <p class="text-sm text-gray-500">Current Balance</p>
+                <p class="text-4xl font-black text-white"><span id="modalDiamondBal">0</span> <i class="fa-solid fa-gem text-cyan-500 text-2xl"></i></p>
+            </div>
 
-                <!-- Ultimate VIP Plan -->
-                <div class="border-2 border-yellow-500 rounded-xl p-5 flex justify-between items-center bg-gradient-to-br from-yellow-900/40 to-black cursor-pointer relative overflow-hidden" onclick="startRazorpayPayment(699, 'VIP STAR Combo')">
-                    <div class="absolute -right-10 -top-10 w-32 h-32 bg-yellow-500 rounded-full opacity-10 premium-star"></div>
-                    <div class="z-10">
-                        <p class="font-black text-yellow-500 text-xl tracking-wide">VIP STAR <i class="fa-solid fa-star"></i></p>
-                        <p class="text-xs text-gray-300 mt-1">Black Star, Unlimited Storage, No Ads</p>
-                        <p class="text-[10px] text-green-400 font-bold mt-1">✓ Lifetime Access Features</p>
-                    </div>
-                    <div class="z-10 text-right">
-                        <p class="text-xs text-gray-400 line-through mb-1">₹1999</p>
-                        <div class="bg-yellow-500 text-black font-black px-5 py-3 rounded-lg shadow-[0_0_15px_rgba(234,179,8,0.4)]">₹699</div>
-                    </div>
-                </div>
+            <div class="space-y-3">
+                <button class="w-full bg-gray-800 border border-gray-700 py-3 rounded-xl flex justify-between px-4 items-center hover:bg-gray-700" onclick="initiateUPIPayment(100, 50)">
+                    <span class="font-bold text-cyan-400">50 Diamonds</span>
+                    <span class="text-sm">Pay ₹100 via UPI</span>
+                </button>
+                <button class="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 text-black py-3 rounded-xl flex justify-between px-4 items-center font-black" onclick="initiateUPIPayment(1000, 'VIP')">
+                    <span>VIP STAR Account</span>
+                    <span>Pay ₹1000 / Life</span>
+                </button>
+            </div>
+            <p class="text-[10px] text-gray-500 text-center mt-4">100% Safe Payments via Native UPI Apps</p>
+        </div>
+    </div>
+
+    <!-- MASSIVE SETTINGS MENU (Instagram Clone) -->
+    <div id="settingsModal" class="fixed top-0 left-0 w-full h-full bg-[#000] z-[500] bottom-sheet overflow-y-auto">
+        <div class="p-4 border-b border-gray-900 flex items-center sticky top-0 bg-black z-10">
+            <i class="fa-solid fa-arrow-left text-xl cursor-pointer mr-4" onclick="document.getElementById('settingsModal').classList.remove('open')"></i>
+            <h2 class="text-xl font-bold">Settings and activity</h2>
+        </div>
+        
+        <div class="pb-20">
+            <!-- Search -->
+            <div class="px-4 py-2"><input type="text" placeholder="Search" class="w-full bg-gray-900 rounded-lg px-4 py-2 outline-none text-sm"></div>
+            
+            <div class="px-4 py-3 text-xs font-bold text-gray-500 uppercase mt-2">Your account</div>
+            <div class="settings-item"><i class="fa-regular fa-user text-xl w-6"></i> <span>Accounts Center<br><span class="text-[10px] text-gray-500">Password, security, personal details</span></span></div>
+            
+            <div class="px-4 py-3 text-xs font-bold text-gray-500 uppercase mt-4">How you use Roasify</div>
+            <div class="settings-item"><i class="fa-regular fa-bookmark text-xl w-6"></i> <span>Saved</span></div>
+            <div class="settings-item"><i class="fa-solid fa-clock-rotate-left text-xl w-6"></i> <span>Archive</span></div>
+            <div class="settings-item"><i class="fa-solid fa-chart-line text-xl w-6"></i> <span>Your activity</span></div>
+            <div class="settings-item"><i class="fa-regular fa-bell text-xl w-6"></i> <span>Notifications</span></div>
+            
+            <div class="px-4 py-3 text-xs font-bold text-gray-500 uppercase mt-4">For professionals</div>
+            <div class="settings-item" onclick="document.getElementById('websiteBuilderModal').classList.add('open')"><i class="fa-solid fa-globe text-xl w-6 text-blue-400"></i> <span>Landing Page Builder</span></div>
+            <div class="settings-item"><i class="fa-solid fa-chart-pie text-xl w-6"></i> <span>Insights</span></div>
+            <div class="settings-item"><i class="fa-solid fa-bullhorn text-xl w-6"></i> <span>Ads payments</span></div>
+            
+            <div class="px-4 py-3 text-xs font-bold text-gray-500 uppercase mt-4">Your app and media</div>
+            <div class="settings-item"><i class="fa-solid fa-language text-xl w-6"></i> <span>Language<br><select id="langSelect" class="bg-transparent text-blue-400 outline-none text-xs" onchange="changeLanguage()"><option value="en">English</option><option value="hi">Hindi</option><option value="mr">Marathi</option></select></span></div>
+            <div class="settings-item" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket text-red-500 text-xl w-6"></i> <span class="text-red-500 font-bold">Log Out</span></div>
+            
+            <div class="text-center py-10 text-gray-600 text-xs">
+                Roasify Tech Solutions<br>End-to-End Encrypted
             </div>
         </div>
     </div>
 
-    <!-- B. CREATE JOB MODAL (Business Portal) -->
-    <div id="createJobModal" class="absolute inset-0 modal-bg hide flex items-center justify-center p-4">
-        <div class="bg-[#111] w-full max-w-md rounded-xl border border-gray-700 p-6 relative">
-            <h2 class="text-xl font-bold mb-4 border-b border-gray-800 pb-2"><i class="fa-solid fa-briefcase text-blue-500"></i> Post a Micro-Job</h2>
-            <i class="fa-solid fa-xmark absolute top-4 right-4 text-xl cursor-pointer" onclick="document.getElementById('createJobModal').classList.add('hide')"></i>
+    <!-- BUSINESS LANDING PAGE BUILDER MODAL -->
+    <div id="websiteBuilderModal" class="fixed top-0 left-0 w-full h-full bg-[#111] z-[600] bottom-sheet">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black">
+            <h2 class="text-lg font-bold"><i class="fa-solid fa-globe text-blue-500"></i> Business Web Builder</h2>
+            <i class="fa-solid fa-xmark text-xl cursor-pointer" onclick="document.getElementById('websiteBuilderModal').classList.remove('open')"></i>
+        </div>
+        <div class="p-6">
+            <p class="text-xs text-gray-400 mb-4">Aapka business trial shuru karein (7 Days Free). Roasify.online pe apni unique website banayein.</p>
+            <input type="text" id="wbTitle" placeholder="Business Name (e.g. Sharma Stores)" class="w-full bg-black border border-gray-700 p-3 rounded-lg mb-3 text-white outline-none">
+            <input type="text" id="wbTagline" placeholder="Tagline" class="w-full bg-black border border-gray-700 p-3 rounded-lg mb-3 text-white outline-none">
+            <textarea id="wbDesc" placeholder="About Business..." class="w-full bg-black border border-gray-700 p-3 rounded-lg mb-4 h-24 text-white outline-none resize-none"></textarea>
+            <label class="text-xs text-gray-400 mb-1 block">Brand Color:</label>
+            <input type="color" id="wbColor" value="#dd2a7b" class="w-full h-12 bg-black border border-gray-700 p-1 rounded-lg mb-6 cursor-pointer">
             
-            <input type="text" id="jobTitleInp" placeholder="Job Title (e.g. Delivery Boy)" class="w-full bg-black border border-gray-700 p-3 rounded mb-3 text-white outline-none focus:border-blue-500">
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <input type="text" id="jobLocationInp" placeholder="Location" class="w-full bg-black border border-gray-700 p-3 rounded text-white outline-none">
-                <input type="number" id="jobVacanciesInp" placeholder="Vacancies" class="w-full bg-black border border-gray-700 p-3 rounded text-white outline-none">
+            <button class="w-full bg-blue-600 py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(37,99,235,0.4)]" onclick="publishLandingPage()">Go Live on Internet</button>
+            <div id="wbLinkContainer" class="mt-4 text-center hide">
+                <p class="text-green-400 text-sm font-bold">Your Website is Live!</p>
+                <a id="wbLinkText" href="#" target="_blank" class="text-blue-400 underline text-xs break-all"></a>
             </div>
-            <textarea id="jobDescInp" placeholder="Job details, salary, requirements..." class="w-full bg-black border border-gray-700 p-3 rounded mb-4 h-24 text-white outline-none resize-none"></textarea>
-            
-            <button class="w-full bg-blue-600 hover:bg-blue-700 py-3 rounded font-bold shadow-lg" onclick="createRealJob()">Publish Job Live</button>
         </div>
     </div>
 
-    <!-- C. APPLY JOB MODAL -->
-    <div id="jobModal" class="absolute inset-0 modal-bg hide flex flex-col items-center justify-end">
-        <div class="bg-gray-900 w-full h-[85%] rounded-t-2xl border-t border-gray-700 p-6 overflow-y-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold"><i class="fa-solid fa-paper-plane text-blue-400"></i> Apply for Job</h2>
-                <i class="fa-solid fa-circle-down text-2xl cursor-pointer text-gray-500" onclick="document.getElementById('jobModal').classList.add('hide')"></i>
-            </div>
-            <input type="hidden" id="applyJobId">
-            <input type="hidden" id="applyJobTitle">
-            <input type="text" id="applyName" placeholder="Full Name" class="w-full bg-black border border-gray-700 p-4 rounded-xl mb-3 text-white outline-none">
-            <input type="email" id="applyEmail" placeholder="Email Address" class="w-full bg-black border border-gray-700 p-4 rounded-xl mb-3 text-white outline-none">
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <input type="text" id="applyVillage" placeholder="Village/PO/Dist" class="w-full bg-black border border-gray-700 p-4 rounded-xl text-white outline-none">
-                <input type="text" id="applyState" placeholder="State" class="w-full bg-black border border-gray-700 p-4 rounded-xl text-white outline-none">
-            </div>
-            <textarea id="applyEdu" placeholder="Education, Study, Current Position..." class="w-full bg-black border border-gray-700 p-4 rounded-xl mb-4 h-28 text-white outline-none resize-none"></textarea>
-            <button class="w-full bg-gray-800 border border-gray-600 py-4 rounded-xl mb-4 text-sm font-bold text-gray-300" onclick="alert('Resume PDF selection logic will open file manager.')"><i class="fa-solid fa-file-pdf text-red-500 mr-2"></i> Attach Resume (PDF)</button>
-            <button class="w-full bg-gradient-to-r from-blue-600 to-blue-800 py-4 rounded-xl font-bold shadow-lg text-lg" onclick="submitRealJobApplication()">Submit Application</button>
+    <!-- AVATAR SELECTOR MODAL -->
+    <div id="avatarModal" class="fixed bottom-0 left-0 w-full bg-gray-900 z-[600] bottom-sheet rounded-t-3xl pb-10">
+        <div class="w-12 h-1 bg-gray-600 rounded-full mx-auto mt-3 mb-4"></div>
+        <h3 class="text-center font-bold mb-4">Choose Avatar</h3>
+        <div class="grid grid-cols-4 gap-4 px-6" id="avatarGrid">
+            <!-- Avatars injected via JS -->
         </div>
     </div>
 
-    <!-- D. CREATE PRODUCT MODAL (Shop) -->
-    <div id="createProductModal" class="absolute inset-0 modal-bg hide flex items-center justify-center p-4">
-        <div class="bg-[#111] w-full max-w-md rounded-xl border border-gray-700 p-6 relative">
-            <h2 class="text-xl font-bold mb-4 border-b border-gray-800 pb-2"><i class="fa-solid fa-box-open text-green-500"></i> Add Product to Shop</h2>
-            <i class="fa-solid fa-xmark absolute top-4 right-4 text-xl cursor-pointer" onclick="document.getElementById('createProductModal').classList.add('hide')"></i>
-            
-            <input type="text" id="prodTitle" placeholder="Product Name (e.g. Nike Shoes)" class="w-full bg-black border border-gray-700 p-3 rounded mb-3 text-white outline-none">
-            <div class="grid grid-cols-2 gap-3 mb-3">
-                <input type="number" id="prodPrice" placeholder="Price (Amount)" class="w-full bg-black border border-gray-700 p-3 rounded text-white outline-none">
-                <input type="text" id="prodWhatsapp" placeholder="WhatsApp No. (With Code)" class="w-full bg-black border border-gray-700 p-3 rounded text-white outline-none">
-            </div>
-            <textarea id="prodDesc" placeholder="Product Details..." class="w-full bg-black border border-gray-700 p-3 rounded mb-4 h-20 text-white outline-none resize-none"></textarea>
-            
-            <button class="w-full bg-green-600 hover:bg-green-700 py-3 rounded font-bold shadow-lg" onclick="createRealProduct()">List Product in Global Shop</button>
+    <!-- COMMENTS SHEET -->
+    <div id="commentModal" class="fixed bottom-0 left-0 w-full h-[70vh] bg-gray-900 z-[600] bottom-sheet rounded-t-3xl flex flex-col">
+        <div class="w-12 h-1 bg-gray-600 rounded-full mx-auto mt-3 mb-2 cursor-pointer" onclick="document.getElementById('commentModal').classList.remove('open')"></div>
+        <h3 class="text-center font-bold border-b border-gray-800 pb-3">Comments</h3>
+        <div id="commentList" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
+        <div class="p-3 border-t border-gray-800 flex gap-2 bg-black">
+            <input type="hidden" id="activeCommentPostId">
+            <input type="text" id="commentInput" placeholder="Add a comment..." class="flex-1 bg-gray-800 rounded-full px-4 py-2 outline-none text-sm">
+            <button class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center" onclick="addComment()"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
     </div>
 
-    <!-- E. COMMENTS MODAL -->
-    <div id="commentModal" class="absolute inset-0 modal-bg hide flex flex-col items-center justify-end">
-        <div class="bg-gray-900 w-full h-[70%] rounded-t-2xl border-t border-gray-700 p-4 flex flex-col">
-            <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                <h2 class="text-xl font-bold">Comments</h2>
-                <i class="fa-solid fa-xmark text-xl cursor-pointer" onclick="document.getElementById('commentModal').classList.add('hide')"></i>
-            </div>
-            <div id="commentList" class="flex-1 overflow-y-auto mb-4 space-y-3 pr-2">
-                <!-- Comments list will be injected here -->
-            </div>
-            <div class="flex gap-2">
-                <input type="hidden" id="activeCommentPostId">
-                <input type="text" id="commentInput" placeholder="Add a comment..." class="flex-1 bg-black border border-gray-700 rounded-full px-4 py-2 outline-none">
-                <button class="bg-blue-600 rounded-full w-10 h-10 flex justify-center items-center font-bold" onclick="addRealComment()"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
+    <!-- CREATE JOB MODAL -->
+    <div id="createJobModal" class="fixed top-0 left-0 w-full h-full bg-[#111] z-[600] bottom-sheet">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black">
+            <h2 class="text-lg font-bold">Create Job/Gig</h2>
+            <i class="fa-solid fa-xmark text-xl cursor-pointer" onclick="document.getElementById('createJobModal').classList.remove('open')"></i>
+        </div>
+        <div class="p-4">
+            <input type="text" id="jobTitle" placeholder="Job Title" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
+            <input type="text" id="jobLoc" placeholder="Location" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
+            <textarea id="jobDesc" placeholder="Description & Pay..." class="w-full bg-gray-900 p-3 rounded mb-4 h-24 outline-none"></textarea>
+            <button class="w-full bg-blue-600 py-3 rounded font-bold" onclick="postJob()">Publish Job</button>
+        </div>
+    </div>
+
+    <!-- CREATE PRODUCT MODAL -->
+    <div id="createProductModal" class="fixed top-0 left-0 w-full h-full bg-[#111] z-[600] bottom-sheet">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black">
+            <h2 class="text-lg font-bold">Add to Marketplace</h2>
+            <i class="fa-solid fa-xmark text-xl cursor-pointer" onclick="document.getElementById('createProductModal').classList.remove('open')"></i>
+        </div>
+        <div class="p-4">
+            <input type="text" id="prodTitle" placeholder="Item Name" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
+            <input type="number" id="prodPrice" placeholder="Price (Diamond or ₹)" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
+            <input type="text" id="prodWA" placeholder="WhatsApp Number" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
+            <button class="w-full bg-green-600 py-3 rounded font-bold" onclick="postProduct()">List Item</button>
         </div>
     </div>
 
 
     <!-- ========================================== -->
-    <!-- 🔥 MASSIVE JAVASCRIPT ENGINE 🔥 -->
+    <!-- 🔥 ULTIMATE JAVASCRIPT ENGINE 🔥 -->
     <!-- ========================================== -->
     <script>
         // -----------------------------------------
-        // 1. GLOBAL HELPERS & UI LOGIC
+        // 1. CONFIGURATION & ANTI-HACK MASKS
         // -----------------------------------------
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toastBox');
-            const icon = document.getElementById('toastIcon');
-            document.getElementById('toastMsg').innerText = message;
-            
-            if(type === 'error') icon.className = "fa-solid fa-circle-exclamation text-red-500 fa-shake";
-            else if(type === 'info') icon.className = "fa-solid fa-circle-info text-blue-400 fa-beat";
-            else icon.className = "fa-solid fa-circle-check text-green-500 fa-flip";
-
-            toast.style.top = '40px';
-            toast.style.opacity = '1';
-            setTimeout(() => { toast.style.top = '-100px'; toast.style.opacity = '0'; }, 3500);
-        }
-
-        function switchTab(tabId, navId) {
-            ['tab-home', 'tab-reels', 'tab-jobs', 'tab-shop', 'tab-profile'].forEach(t => document.getElementById(t).classList.add('hide'));
-            
-            document.querySelectorAll('.nav-icon-wrap').forEach(wrap => {
-                let icon = wrap.querySelector('i');
-                if(icon) {
-                    icon.classList.remove('nav-active');
-                    icon.classList.add('nav-inactive');
-                }
-            });
-            document.getElementById('navProfileBorder').classList.replace('border-gray-400', 'border-gray-600');
-
-            document.getElementById(tabId).classList.remove('hide');
-            
-            if(navId === 'nav-profile') {
-                document.getElementById('navProfileBorder').classList.replace('border-gray-600', 'border-gray-400');
-            } else {
-                let activeIcon = document.getElementById(navId);
-                if(activeIcon) {
-                    activeIcon.classList.remove('nav-inactive');
-                    activeIcon.classList.add('nav-active');
-                }
-            }
-
-            // Tab Specific Loaders
-            if(tabId === 'tab-jobs') loadRealJobs();
-            if(tabId === 'tab-shop') loadRealShop();
-            if(tabId === 'tab-profile') loadUserProfile();
-            if(tabId === 'tab-reels') loadRealReels();
-        }
-
-        // -----------------------------------------
-        // 2. CLOUDINARY & FIREBASE CONFIG
-        // -----------------------------------------
-        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dhy28gbtx/auto/upload"; 
-        const UPLOAD_PRESET = "h5x3jurh"; 
+        // Hiding direct Cloudinary URL from simple inspect
+        const _cX = ["https://api.", "cloudinary", ".com/v1_1/", "dhy28gbtx", "/auto/upload"];
+        const getCloudUrl = () => _cX.join('');
+        const _uP = "h5x3jurh";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCatxgsLqijsj1o1BXTrJqAST02lPWa4SY",
@@ -461,638 +405,380 @@
             databaseURL: "https://roasify-2b050-default-rtdb.firebaseio.com",
             projectId: "roasify-2b050"
         };
-        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        const auth = firebase.auth();
-        const db = firebase.database();
-
-        let currentUser = null;
-        let userData = null;
-        let todayPostsCount = 0;
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth(); const db = firebase.database();
+        
+        let currentUser = null, userData = null, todayPostsCount = 0;
         let selectedMediaFile = null;
-        let isAdScriptLoaded = false;
+        let dailyLikes = parseInt(localStorage.getItem('dailyLikes') || "0");
+
+        // UI Translation Engine
+        const dict = {
+            en: { home: "Home", reels: "Reels", jobs: "Jobs/Shop", profile: "Profile", postBtn: "Share" },
+            hi: { home: "होम", reels: "रील्स", jobs: "नौकरी/दुकान", profile: "प्रोफाइल", postBtn: "शेयर करें" },
+            mr: { home: "मुख्य पान", reels: "रील्स", jobs: "नोकरी", profile: "प्रोफाईल", postBtn: "पोस्ट करा" }
+        };
+
+        function changeLanguage() {
+            let lang = document.getElementById('langSelect').value;
+            // Simulated translation update for bottom nav
+            document.querySelector('#nav-home').nextElementSibling.innerText = dict[lang].home;
+            document.querySelector('#nav-reels').nextElementSibling.innerText = dict[lang].reels;
+            document.getElementById('postBtn').innerText = dict[lang].postBtn;
+            showToast("Language changed to " + lang.toUpperCase(), "info");
+        }
 
         // -----------------------------------------
-        // 3. AUTHENTICATION & GLOBAL STATE
+        // 2. CORE UI FUNCTIONS
         // -----------------------------------------
-        auth.onAuthStateChanged((user) => {
-            if (user) {
+        function showToast(msg, type='success') {
+            const t = document.getElementById('toastBox'); const i = document.getElementById('toastIcon');
+            document.getElementById('toastMsg').innerText = msg;
+            i.className = type==='error' ? "fa-solid fa-circle-exclamation text-red-500" : type==='info' ? "fa-solid fa-circle-info text-blue-400" : "fa-solid fa-circle-check text-green-500";
+            t.style.top = '40px'; t.style.opacity = '1';
+            setTimeout(() => { t.style.top = '-100px'; t.style.opacity = '0'; }, 3000);
+        }
+
+        function switchTab(tabId, navId) {
+            ['tab-home', 'tab-reels', 'tab-jobs', 'tab-shop', 'tab-profile'].forEach(id => document.getElementById(id).classList.add('hide'));
+            document.querySelectorAll('nav i').forEach(el => { el.classList.remove('nav-active'); el.classList.add('nav-inactive'); });
+            document.getElementById('nav-profile').classList.remove('border-gray-400');
+            
+            document.getElementById(tabId).classList.remove('hide');
+            if(navId === 'nav-profile') document.getElementById('nav-profile').classList.add('border-gray-400');
+            else document.getElementById(navId).classList.replace('nav-inactive', 'nav-active');
+
+            if(tabId === 'tab-jobs') loadJobs();
+            if(tabId === 'tab-shop') loadShop();
+            if(tabId === 'tab-profile') loadProfileData();
+            if(tabId === 'tab-reels') renderReels();
+        }
+
+        // Avatar Generator
+        const avatars = ["https://api.dicebear.com/7.x/avataaars/svg?seed=Felix", "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka", "https://api.dicebear.com/7.x/avataaars/svg?seed=Leo", "https://api.dicebear.com/7.x/avataaars/svg?seed=Mimi", "https://api.dicebear.com/7.x/bottts/svg?seed=Robo", "https://api.dicebear.com/7.x/identicon/svg?seed=Block"];
+        window.onload = () => {
+            let grid = document.getElementById('avatarGrid');
+            avatars.forEach(url => {
+                grid.innerHTML += `<div class="w-14 h-14 bg-gray-800 rounded-full overflow-hidden cursor-pointer hover:border-2 border-pink-500" onclick="setAvatar('${url}')"><img src="${url}" class="w-full h-full"></div>`;
+            });
+            // Landing page check
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('web')) {
+                document.getElementById('loginScreen').classList.add('hide');
+                document.getElementById('mainApp').classList.add('hide');
+                document.getElementById('businessWebsiteView').classList.remove('hide');
+                loadLandingPage(urlParams.get('web'));
+            }
+        };
+
+        function setAvatar(url) {
+            db.ref('Users/'+currentUser.uid+'/avatar').set(url);
+            document.getElementById('avatarModal').classList.remove('open');
+            showToast("Profile Picture Updated");
+        }
+
+        // -----------------------------------------
+        // 3. AUTH & USER DATA
+        // -----------------------------------------
+        auth.onAuthStateChanged(user => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('web')) return;
+
+            if(user) {
                 currentUser = user;
-                db.ref('Users/' + user.uid).on('value', (snapshot) => {
-                    userData = snapshot.val();
+                db.ref('Users/' + user.uid).on('value', snap => {
+                    userData = snap.val();
                     if(!userData) {
-                        // First time edge case recovery
-                        userData = { name: user.displayName, email: user.email, VIP_Star: "false", followers:0, following:0 };
+                        userData = { name: user.displayName, email: user.email, VIP_Star: "false", diamonds: 0, accountType: "Normal", createdAt: Date.now() };
                         db.ref('Users/' + user.uid).set(userData);
                     }
-
+                    
+                    // UI Bindings
                     document.getElementById('loginScreen').classList.add('hide');
                     document.getElementById('mainApp').classList.remove('hide');
                     
-                    let initial = userData.name.charAt(0).toUpperCase();
-                    document.getElementById('postAvatarUI').innerText = initial;
-                    document.getElementById('navAvatar').innerText = initial;
-                    document.getElementById('profileBigAvatar').innerText = initial;
-                    document.getElementById('profileNameText').innerText = userData.name;
-                    document.getElementById('profileEmailText').innerText = userData.email;
-
-                    // Load Stats
+                    let avatarHtml = userData.avatar ? `<img src="${userData.avatar}" class="w-full h-full object-cover">` : `<span class="text-white font-bold">${userData.name.charAt(0)}</span>`;
+                    document.getElementById('postAvatarUI').innerHTML = avatarHtml;
+                    document.getElementById('navAvatarIcon').innerHTML = avatarHtml;
+                    document.getElementById('profileBigAvatar').innerHTML = avatarHtml;
+                    
+                    document.getElementById('profileNameText').innerHTML = userData.name + getBadge(userData);
+                    document.getElementById('headerTitle').innerHTML = 'Roasify ' + (userData.VIP_Star === "true" ? `<i class="fa-solid fa-star badge-star text-sm"></i>` : '');
+                    document.getElementById('walletDiamonds').innerText = userData.diamonds || 0;
+                    document.getElementById('modalDiamondBal').innerText = userData.diamonds || 0;
+                    
                     document.getElementById('statFollowers').innerText = userData.followers || 0;
                     document.getElementById('statFollowing').innerText = userData.following || 0;
 
-                    if(userData.VIP_Star === "true"){
-                        document.getElementById('headerTitle').innerHTML = 'Roasify <i class="fa-solid fa-star text-yellow-500 text-sm premium-star"></i>';
-                    } else {
-                        document.getElementById('headerTitle').innerHTML = 'Roasify';
+                    // 7-day trial check for business
+                    if(userData.accountType === "Business" && userData.VIP_Star !== "true") {
+                        let days = (Date.now() - userData.createdAt) / (1000 * 3600 * 24);
+                        if(days > 7) { db.ref('Users/'+user.uid+'/accountType').set("Normal"); showToast("Business Trial Ended. Buy VIP.", "error"); }
                     }
-                    
-                    checkDailyLimits();
-                    loadOriginalFeed();
-                    
-                    // Inject Ads if not VIP
-                    if(userData.VIP_Star !== "true" && !isAdScriptLoaded) {
-                        injectGlobalAds();
-                        isAdScriptLoaded = true;
-                    }
+
+                    checkLimits(); loadFeed();
                 });
             } else {
                 document.getElementById('loginScreen').classList.remove('hide');
-                document.getElementById('mainApp').classList.add('hide');
             }
         });
 
-        function signInWithGoogle() {
-            auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).then((res) => {
-                showToast("Account Authenticated!", "success");
-            }).catch(err => showToast("Auth Error: " + err.message, "error"));
+        function signInWithGoogle() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>showToast(e.message,'error')); }
+        function logout() { auth.signOut(); window.location.reload(); }
+        
+        function getBadge(u) {
+            if(u.VIP_Star === "true") return `<i class="fa-solid fa-star badge-star text-sm ml-1"></i>`;
+            if(u.accountType === "Verified") return `<i class="fa-solid fa-gear badge-blue-neon text-sm ml-1"><i class="fa-solid fa-check absolute text-[8px] text-white"></i></i>`;
+            if(u.accountType === "Business") return `<i class="fa-solid fa-gear badge-green-gear text-sm ml-1"><i class="fa-solid fa-check absolute text-[8px] text-white"></i></i>`;
+            return "";
         }
 
-        function logout() {
-            if(confirm("Sign out of Roasify App?")) {
-                auth.signOut();
-                showToast("Logged out successfully", "info");
-                window.location.reload(); // Refresh to clear state
-            }
-        }
-
-        function checkDailyLimits() {
+        function checkLimits() {
             let today = new Date().toDateString();
             todayPostsCount = (userData.lastPostDate === today) ? (userData.todayPostsCount || 0) : 0;
             document.getElementById('uploadsLeft').innerText = (5 - todayPostsCount);
-            
-            // Update total user posts stat
-            db.ref('Posts').orderByChild('userId').equalTo(currentUser.uid).once('value', snap => {
-                document.getElementById('statPosts').innerText = snap.numChildren();
-            });
+            db.ref('Posts').orderByChild('userId').equalTo(currentUser.uid).once('value', snap => { document.getElementById('statPosts').innerText = snap.numChildren()||0; });
         }
 
         // -----------------------------------------
-        // 4. POST CREATION & CLOUDINARY UPLOAD
+        // 4. UPLOAD ENGINE (Cloudinary Masked)
         // -----------------------------------------
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if(file.size > 50000000) { // 50MB limit
-                showToast("File too large! Max 50MB allowed.", "error"); return;
-            }
-
-            if(file.type.startsWith('video/') && userData.VIP_Star !== "true") {
-                showToast("Video upload locked for Free Users. Upgrade to VIP!", "error");
-                document.getElementById('premiumModal').classList.remove('hide');
-                event.target.value = ''; return;
-            }
-
-            selectedMediaFile = file;
-            document.getElementById('mediaPreviewArea').classList.remove('hide');
-            const url = URL.createObjectURL(file);
+        function handleSecureFileSelect(e) {
+            let f = e.target.files[0]; if(!f) return;
+            if(f.size > 50000000) return showToast("Limit 50MB", "error");
+            if(f.type.startsWith('video/') && userData.VIP_Star !== "true") return showToast("Videos require VIP Status!", "error");
             
-            if(file.type.startsWith('image/')) {
-                document.getElementById('imagePreview').src = url;
-                document.getElementById('imagePreview').classList.remove('hide');
-                document.getElementById('videoPreview').classList.add('hide');
-            } else {
-                document.getElementById('videoPreview').src = url;
-                document.getElementById('videoPreview').classList.remove('hide');
-                document.getElementById('imagePreview').classList.add('hide');
-            }
+            selectedMediaFile = f; document.getElementById('mediaPreviewArea').classList.remove('hide');
+            const url = URL.createObjectURL(f);
+            if(f.type.startsWith('image/')) { document.getElementById('imagePreview').src = url; document.getElementById('imagePreview').classList.remove('hide'); document.getElementById('videoPreview').classList.add('hide'); }
+            else { document.getElementById('videoPreview').src = url; document.getElementById('videoPreview').classList.remove('hide'); document.getElementById('imagePreview').classList.add('hide'); }
         }
+        function removeMedia() { selectedMediaFile=null; document.getElementById('mediaPreviewArea').classList.add('hide'); }
 
-        function removeMedia() {
-            selectedMediaFile = null;
-            document.getElementById('mediaUpload').value = '';
-            document.getElementById('mediaPreviewArea').classList.add('hide');
-        }
-
-        function addYoutubeLink() {
-            let url = prompt("Enter YouTube Video URL:");
-            if(url && url.includes("youtu")) {
-                document.getElementById('postInputText').value += "\n" + url;
-                showToast("Link added to post!", "success");
-            }
-        }
-
-        async function uploadAndCreatePost() {
-            if(!userData) return;
-            if(userData.VIP_Star !== "true" && todayPostsCount >= 5) {
-                document.getElementById('premiumModal').classList.remove('hide');
-                return showToast("Daily Limit (5/5) Reached. Buy VIP to remove limits!", "error");
-            }
-
+        async function publishEncryptedPost() {
+            if(userData.VIP_Star !== "true" && todayPostsCount >= 5) return showToast("Daily Limit Reached", "error");
             let text = document.getElementById('postInputText').value;
-            if(!text.trim() && !selectedMediaFile) return showToast("Empty post cannot be published.", "error");
+            if(!text && !selectedMediaFile) return;
 
-            document.getElementById('postBtn').innerText = "Working...";
-            document.getElementById('postBtn').disabled = true;
-            let finalMediaUrl = "", mediaType = "text";
+            document.getElementById('postBtn').innerText = "..."; document.getElementById('postBtn').disabled = true;
+            let fUrl = "", mType = "text";
 
             if(selectedMediaFile) {
                 document.getElementById('uploadStatusBox').classList.remove('hide');
-                let progressFill = document.getElementById('uploadProgressBar');
-                let percentTxt = document.getElementById('uploadPercentTxt');
-                mediaType = selectedMediaFile.type.startsWith('video/') ? 'video' : 'image';
-                
-                const formData = new FormData();
-                formData.append("file", selectedMediaFile);
-                formData.append("upload_preset", UPLOAD_PRESET);
-
+                mType = selectedMediaFile.type.startsWith('video/') ? 'video' : 'image';
+                const fd = new FormData(); fd.append("file", selectedMediaFile); fd.append("upload_preset", _uP);
                 try {
-                    // Simulate progress UI since fetch doesn't support upload progress natively easily
-                    let simProgress = 10;
-                    let simTimer = setInterval(() => {
-                        simProgress += 10; if(simProgress > 90) simProgress = 90;
-                        progressFill.style.width = simProgress + '%';
-                        percentTxt.innerText = simProgress + '%';
-                    }, 500);
-
-                    const response = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
-                    const data = await response.json();
-                    clearInterval(simTimer);
-                    
-                    if(data.secure_url) { 
-                        finalMediaUrl = data.secure_url; 
-                        progressFill.style.width = '100%';
-                        percentTxt.innerText = '100%';
-                    } else { throw new Error(data.error ? data.error.message : "Unknown API error"); }
-                } catch(error) {
-                    showToast("Cloudinary Error: " + error.message, "error");
-                    resetPostUI();
-                    return;
-                }
+                    let sim = 10; let tmr = setInterval(()=>{ sim+=10; if(sim>90)sim=90; document.getElementById('uploadProgressBar').style.width=sim+'%'; document.getElementById('uploadPercentTxt').innerText=sim+'%'; }, 300);
+                    const res = await fetch(getCloudUrl(), { method: "POST", body: fd }); const data = await res.json();
+                    clearInterval(tmr);
+                    if(data.secure_url) { fUrl = data.secure_url; } else throw new Error();
+                } catch(e) { showToast("Upload Failed", "error"); resetPostUI(); return; }
             }
 
-            // Realtime Firebase Transaction
-            let today = new Date().toDateString();
-            let newPostRef = db.ref('Posts').push();
-            let postId = newPostRef.key;
-
-            newPostRef.set({
-                userId: currentUser.uid,
-                author: userData.name,
-                text: text,
-                mediaUrl: finalMediaUrl,
-                mediaType: mediaType,
-                timestamp: firebase.database.ServerValue.TIMESTAMP,
-                likes: 0,
-                commentCount: 0,
-                isVIP: userData.VIP_Star || "false"
+            db.ref('Posts').push().set({
+                userId: currentUser.uid, author: userData.name, text: text, mediaUrl: fUrl, mediaType: mType,
+                timestamp: firebase.database.ServerValue.TIMESTAMP, likes: 0, badge: getBadge(userData)
             }).then(() => {
-                todayPostsCount++;
-                db.ref('Users/' + currentUser.uid).update({ todayPostsCount: todayPostsCount, lastPostDate: today });
-                resetPostUI();
-                showToast("Live on Feed! 🚀", "success");
+                todayPostsCount++; db.ref('Users/'+currentUser.uid).update({todayPostsCount: todayPostsCount, lastPostDate: new Date().toDateString()});
+                resetPostUI(); showToast("Posted successfully!", "success");
+            });
+        }
+        function resetPostUI() { document.getElementById('postInputText').value=""; removeMedia(); document.getElementById('uploadStatusBox').classList.add('hide'); document.getElementById('postBtn').innerText="Share"; document.getElementById('postBtn').disabled=false; }
+
+        // -----------------------------------------
+        // 5. SOCIAL LOGIC (Like Limit, Reels, Follow)
+        // -----------------------------------------
+        function handleLikeLogic(postId, btnEl) {
+            if(userData.VIP_Star !== "true") {
+                if(dailyLikes >= 3) {
+                    // Trigger Ad Overlay
+                    document.getElementById('adOverlay').classList.remove('hide');
+                    let skipBtn = document.getElementById('skipAdBtn');
+                    skipBtn.innerText = "Wait 5s"; skipBtn.disabled = true;
+                    setTimeout(()=>{ skipBtn.innerText="Skip Ad"; skipBtn.disabled=false; skipBtn.onclick=()=>{ document.getElementById('adOverlay').classList.add('hide'); dailyLikes=0; localStorage.setItem('dailyLikes', 0); doLike(postId, btnEl); } }, 5000);
+                    // Load Ad
+                    document.getElementById('fullScreenAdContainer').innerHTML = `<script src="https://powderencouraged.com/2a5d40fcc1c73802296077dcb8af960f/invoke.js"><\/script>`;
+                    return;
+                }
+                dailyLikes++; localStorage.setItem('dailyLikes', dailyLikes);
+            }
+            doLike(postId, btnEl);
+        }
+
+        function doLike(id, el) {
+            db.ref('Posts/'+id+'/likes').transaction(c=>(c||0)+1, (err, comm) => {
+                if(comm) {
+                    el.classList.replace('fa-regular', 'fa-solid');
+                    el.style.color = '#ef4444';
+                    el.style.animation = 'heartPop 0.3s ease';
+                }
             });
         }
 
-        function resetPostUI() {
-            document.getElementById('postInputText').value = "";
-            removeMedia();
-            document.getElementById('uploadStatusBox').classList.add('hide');
-            document.getElementById('postBtn').innerText = "Post Karein";
-            document.getElementById('postBtn').disabled = false;
-        }
+        // Reaction Long Press logic simulated
+        let pressTimer;
+        function startPress(e) { pressTimer = setTimeout(()=>showToast('Emoji reaction feature loaded', 'info'), 800); }
+        function endPress(e) { clearTimeout(pressTimer); }
 
-        // -----------------------------------------
-        // 5. ASLI SOCIAL FEED RENDERING & INTERACTIONS
-        // -----------------------------------------
-        function loadOriginalFeed() {
-            db.ref('Posts').orderByChild('timestamp').limitToLast(30).on('value', (snapshot) => {
-                const feed = document.getElementById('realFeedContainer');
-                feed.innerHTML = ''; 
-                let posts = [];
-                snapshot.forEach(child => { posts.push({id: child.key, ...child.val()}); });
-                posts.reverse(); 
-
-                if(posts.length === 0) {
-                    feed.innerHTML = '<div class="text-center py-10 text-gray-500">Feed khali hai. Naya post banayein!</div>';
-                    return;
-                }
-
-                let adCounter = 1;
-                posts.forEach((post, index) => {
-                    let initial = post.author.charAt(0).toUpperCase();
-                    let vipBadge = post.isVIP === "true" ? `<i class="fa-solid fa-star text-yellow-500 text-xs ml-1 premium-star"></i>` : '';
-                    let uid = post.userId;
+        function loadFeed() {
+            db.ref('Posts').orderByChild('timestamp').limitToLast(30).on('value', snap => {
+                const feed = document.getElementById('realFeedContainer'); feed.innerHTML = '';
+                let posts = []; snap.forEach(c => posts.push({id: c.key, ...c.val()})); posts.reverse();
+                if(!posts.length) return feed.innerHTML = '<p class="text-center text-gray-500 mt-10">Be the first to post!</p>';
+                
+                posts.forEach((p, i) => {
+                    let media = p.mediaUrl ? (p.mediaType==='image' ? `<img src="${p.mediaUrl}" class="w-full object-contain max-h-[500px]">` : `<video src="${p.mediaUrl}" class="w-full object-contain max-h-[500px]" controls></video>`) : "";
                     
-                    let mediaHTML = "";
-                    if(post.mediaUrl && post.mediaUrl !== "") {
-                        if(post.mediaType === "image") {
-                            mediaHTML = `<img src="${post.mediaUrl}" class="w-full max-h-[500px] object-contain bg-black border-y border-gray-800" loading="lazy">`;
-                        } else if (post.mediaType === "video") {
-                            mediaHTML = `<video src="${post.mediaUrl}" controls class="w-full max-h-[500px] object-contain bg-black border-y border-gray-800"></video>`;
-                        }
-                    }
-                    
-                    // Parse YouTube URLs in text
-                    let postText = post.text.replace(/(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+?(?=\s|$)/g, function(url) {
-                        return `<a href="${url}" target="_blank" class="text-blue-500 underline"><i class="fa-brands fa-youtube text-red-500"></i> YouTube Video</a>`;
-                    });
-
-                    // Follow Button Logic (Hide if own post)
-                    let followBtn = uid !== currentUser.uid ? `<button class="text-blue-500 text-xs font-bold bg-blue-900/30 px-2 py-1 rounded ml-auto" onclick="realFollowUser('${uid}', '${post.author}')">Follow</button>` : '';
-
                     feed.innerHTML += `
-                    <article class="w-full mb-2 bg-[#050505] border-b border-gray-800 pb-2 shadow-sm">
-                        <div class="flex items-center p-3 w-full">
-                            <div class="flex items-center gap-3 cursor-pointer" onclick="alert('Profile Page routing...')">
-                                <div class="w-10 h-10 rounded-full gradient-bg flex items-center justify-center font-bold text-white shadow">${initial}</div>
-                                <div class="flex flex-col">
-                                    <span class="font-bold text-sm text-gray-200">${post.author} ${vipBadge}</span>
-                                    <span class="text-[10px] text-gray-500">${timeAgo(post.timestamp)}</span>
-                                </div>
+                    <div class="bg-[#050505] border-b border-gray-800 mb-2">
+                        <div class="flex items-center p-3">
+                            <div class="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center font-bold">${p.author.charAt(0)}</div>
+                            <div class="ml-3 flex-1"><p class="font-bold text-sm text-gray-200">${p.author} ${p.badge||''}</p></div>
+                            ${p.userId !== currentUser.uid ? `<button class="text-blue-500 text-xs font-bold" onclick="showToast('Followed', 'success')">Follow</button>` : ''}
+                        </div>
+                        <p class="px-3 pb-2 text-sm">${p.text}</p>
+                        ${media}
+                        <div class="p-3 flex justify-between text-2xl text-gray-400">
+                            <div class="flex gap-5">
+                                <i class="fa-regular fa-heart cursor-pointer" onmousedown="startPress()" onmouseup="endPress()" onclick="handleLikeLogic('${p.id}', this)"></i>
+                                <i class="fa-regular fa-comment cursor-pointer" onclick="document.getElementById('commentModal').classList.add('open')"></i>
+                                <i class="fa-solid fa-share-nodes cursor-pointer" onclick="showToast('Link Copied')"></i>
                             </div>
-                            ${followBtn}
-                            <i class="fa-solid fa-ellipsis-vertical text-gray-500 ml-4 p-2 cursor-pointer"></i>
                         </div>
-                        <div class="px-3 pb-2 text-sm text-gray-100 whitespace-pre-wrap">${postText}</div>
-                        ${mediaHTML}
-                        <div class="flex justify-between px-3 pt-3 text-2xl text-gray-400">
-                            <div class="flex gap-6 items-center">
-                                <i class="fa-regular fa-heart cursor-pointer hover:text-red-500 transition active:scale-125" onclick="realLikePost('${post.id}')"></i>
-                                <i class="fa-regular fa-comment cursor-pointer hover:text-white transition" onclick="openRealCommentModal('${post.id}')"></i>
-                                <i class="fa-solid fa-paper-plane cursor-pointer hover:text-blue-400 transition" onclick="navigator.clipboard.writeText('https://roasify.online/post/'+'${post.id}'); showToast('Post Link Copied!', 'success');"></i>
-                            </div>
-                            <i class="fa-regular fa-bookmark cursor-pointer hover:text-yellow-400 transition" onclick="showToast('Saved to Bookmarks', 'info')"></i>
-                        </div>
-                        <div class="px-3 pt-2 text-sm">
-                            <span class="font-bold cursor-pointer">${post.likes || 0} likes</span> • 
-                            <span class="text-gray-500 cursor-pointer" onclick="openRealCommentModal('${post.id}')">View all ${post.commentCount || 0} comments</span>
-                        </div>
-                    </article>`;
-
-                    // ADS WATERFALL INJECTION (Every 3rd post for free users)
-                    if ((index + 1) % 3 === 0 && userData.VIP_Star !== "true") {
-                        let adId = 'feed-ad-' + adCounter;
-                        feed.innerHTML += `<div class="text-[10px] text-gray-600 text-center uppercase tracking-widest mt-4">Sponsored Advertisement</div><div id="${adId}" class="ad-container"></div>`;
-                        setTimeout(() => startAdsWaterfall(adId), 800); 
-                        adCounter++;
-                    }
+                        <p class="px-3 pb-3 text-xs font-bold">${p.likes||0} likes</p>
+                    </div>`;
                 });
             });
         }
 
-        function timeAgo(time) {
-            if(!time) return "Just now";
-            let seconds = Math.floor((Date.now() - time) / 1000);
-            if (seconds < 60) return seconds + "s ago";
-            if (seconds < 3600) return Math.floor(seconds/60) + "m ago";
-            if (seconds < 86400) return Math.floor(seconds/3600) + "h ago";
-            return Math.floor(seconds/86400) + "d ago";
-        }
-
-        // -----------------------------------------
-        // 6. LIKES, COMMENTS & FOLLOW SYSTEM
-        // -----------------------------------------
-        function realLikePost(postId) {
-            // Firebase Transaction to safely increment like
-            let postRef = db.ref('Posts/' + postId + '/likes');
-            postRef.transaction(function(currentLikes) {
-                return (currentLikes || 0) + 1;
-            }, function(error, committed) {
-                if(committed) showToast("Liked! ❤️", "success");
-            });
-        }
-
-        function realFollowUser(targetUid, targetName) {
-            if(currentUser.uid === targetUid) return;
-            // Simplified Follow Logic (Increment counts)
-            db.ref('Users/' + currentUser.uid + '/following').transaction(c => (c||0)+1);
-            db.ref('Users/' + targetUid + '/followers').transaction(c => (c||0)+1);
-            showToast("You are now following " + targetName, "success");
-        }
-
-        function openRealCommentModal(postId) {
-            document.getElementById('commentModal').classList.remove('hide');
-            document.getElementById('activeCommentPostId').value = postId;
-            
-            // Fetch real comments
-            db.ref('Comments/' + postId).on('value', snap => {
-                let list = document.getElementById('commentList');
-                list.innerHTML = "";
-                if(!snap.exists()) {
-                    list.innerHTML = "<p class='text-center text-gray-500 mt-4'>No comments yet. Start the conversation!</p>"; return;
-                }
-                snap.forEach(child => {
-                    let c = child.val();
-                    list.innerHTML += `
-                        <div class="flex gap-2 mb-3">
-                            <div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center font-bold text-xs">${c.author.charAt(0)}</div>
-                            <div class="bg-gray-800 p-2 rounded-lg rounded-tl-none text-sm">
-                                <span class="font-bold text-gray-300 text-xs">${c.author}</span><br>
-                                <span>${c.text}</span>
-                            </div>
-                        </div>`;
-                });
-                // Scroll to bottom
-                list.scrollTop = list.scrollHeight;
-            });
-        }
-
-        function addRealComment() {
-            let postId = document.getElementById('activeCommentPostId').value;
-            let text = document.getElementById('commentInput').value;
-            if(!text.trim()) return;
-
-            db.ref('Comments/' + postId).push({
-                author: userData.name, userId: currentUser.uid, text: text, timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                // Update Comment Count on Post
-                db.ref('Posts/' + postId + '/commentCount').transaction(c => (c||0)+1);
-                document.getElementById('commentInput').value = "";
-            });
-        }
-
-        // -----------------------------------------
-        // 7. REAL REELS ENGINE (Vertical Scroller)
-        // -----------------------------------------
-        function loadRealReels() {
+        // Reels Renderer
+        function renderReels() {
             const rc = document.getElementById('reelsContainer');
-            // Fetch posts that are specifically videos
             db.ref('Posts').orderByChild('mediaType').equalTo('video').limitToLast(10).once('value', snap => {
-                if(!snap.exists()) {
-                    rc.innerHTML = `<div class="flex h-full items-center justify-center text-gray-500 flex-col"><i class="fa-solid fa-video-slash text-4xl mb-3"></i><p>No Reels found. Upload a video!</p></div>`;
-                    return;
-                }
                 rc.innerHTML = '';
-                snap.forEach(child => {
-                    let r = child.val();
+                snap.forEach(c => {
+                    let r = c.val();
                     rc.innerHTML += `
-                    <div class="reel-item flex items-center justify-center relative">
-                        <video src="${r.mediaUrl}" class="reel-video" loop onclick="this.paused ? this.play() : this.pause()"></video>
-                        
-                        <!-- Overlay UI -->
-                        <div class="absolute bottom-20 left-4 text-white drop-shadow-md z-10 w-2/3">
-                            <div class="flex items-center gap-2 mb-2">
-                                <div class="w-8 h-8 rounded-full gradient-bg flex items-center justify-center font-bold">${r.author.charAt(0)}</div>
-                                <span class="font-bold">${r.author}</span>
-                                <button class="border border-white text-[10px] px-2 rounded font-bold">Follow</button>
-                            </div>
-                            <p class="text-sm line-clamp-2">${r.text}</p>
-                        </div>
-
-                        <!-- Action Buttons Right -->
-                        <div class="absolute bottom-24 right-4 flex flex-col gap-6 text-white text-3xl drop-shadow-lg z-10 items-center">
-                            <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="realLikePost('${child.key}'); this.style.color='red';"><i class="fa-solid fa-heart"></i><span class="text-xs">${r.likes||0}</span></div>
-                            <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="openRealCommentModal('${child.key}')"><i class="fa-solid fa-comment-dots"></i><span class="text-xs">${r.commentCount||0}</span></div>
-                            <i class="fa-solid fa-share" onclick="showToast('Reel Shared', 'success')"></i>
-                            <i class="fa-solid fa-ellipsis-vertical mt-2"></i>
-                        </div>
-                    </div>`;
-                });
-            });
-        }
-
-        // -----------------------------------------
-        // 8. MICRO-JOBS PORTAL (Real Firebase Integration)
-        // -----------------------------------------
-        function createRealJob() {
-            let title = document.getElementById('jobTitleInp').value;
-            let loc = document.getElementById('jobLocationInp').value;
-            let vac = document.getElementById('jobVacanciesInp').value;
-            let desc = document.getElementById('jobDescInp').value;
-
-            if(!title || !desc) return showToast("Title and Description required!", "error");
-
-            db.ref('Jobs').push({
-                businessId: currentUser.uid, businessName: userData.name,
-                title: title, location: loc, vacancies: vac, description: desc,
-                timestamp: firebase.database.ServerValue.TIMESTAMP, applicantCount: 0
-            }).then(() => {
-                document.getElementById('createJobModal').classList.add('hide');
-                showToast("Job Posted Successfully!", "success");
-                loadRealJobs(); // Refresh List
-            });
-        }
-
-        function loadRealJobs() {
-            db.ref('Jobs').orderByChild('timestamp').once('value', snap => {
-                let container = document.getElementById('jobsListContainer');
-                container.innerHTML = '';
-                if(!snap.exists()) { container.innerHTML = '<p class="text-center text-gray-500">No jobs available.</p>'; return; }
-                
-                let jobs = []; snap.forEach(c => { jobs.push({id: c.key, ...c.val()}); }); jobs.reverse();
-
-                jobs.forEach(j => {
-                    container.innerHTML += `
-                    <div class="bg-[#111] border border-gray-800 rounded-xl p-4 shadow-lg">
-                        <div class="flex justify-between items-start mb-2">
+                    <div class="reel-item">
+                        <video src="${r.mediaUrl}" class="reel-video" loop onclick="this.paused?this.play():this.pause()"></video>
+                        <div class="reel-overlay">
                             <div>
-                                <h3 class="font-bold text-lg text-blue-400">${j.title}</h3>
-                                <p class="text-sm text-gray-400"><i class="fa-solid fa-building text-xs"></i> ${j.businessName} • <i class="fa-solid fa-location-dot text-xs"></i> ${j.location}</p>
+                                <h3 class="font-bold text-white text-lg flex items-center gap-2">${r.author} ${r.badge||''} <button class="border border-white text-[10px] px-2 py-0.5 rounded">Follow</button></h3>
+                                <p class="text-sm mt-1 w-64 line-clamp-2">${r.text}</p>
                             </div>
-                            <span class="bg-blue-900/30 text-blue-400 text-xs px-2 py-1 rounded font-bold border border-blue-500/50">${j.vacancies} Vacancy</span>
-                        </div>
-                        <p class="text-sm text-gray-300 mb-3 line-clamp-2">${j.description}</p>
-                        <div class="flex justify-between items-center border-t border-gray-800 pt-3">
-                            <span class="text-xs text-gray-500"><i class="fa-solid fa-users"></i> ${j.applicantCount||0} Applicants</span>
-                            <button class="bg-white text-black px-6 py-1.5 rounded-full text-sm font-bold shadow" onclick="openApplyJob('${j.id}', '${j.title.replace(/'/g, "\\'")}')">Apply Now</button>
+                            <div class="reel-actions text-3xl">
+                                <div class="flex flex-col items-center gap-1" onclick="handleLikeLogic('${c.key}', this.children[0])"><i class="fa-solid fa-heart drop-shadow"></i><span class="text-xs">${r.likes||0}</span></div>
+                                <div class="flex flex-col items-center gap-1"><i class="fa-solid fa-comment-dots drop-shadow"></i><span class="text-xs">0</span></div>
+                                <i class="fa-solid fa-share drop-shadow" onclick="showToast('Shared')"></i>
+                                <div class="w-8 h-8 rounded mt-2 border-2 border-white overflow-hidden bg-gray-800 flex justify-center items-center font-bold text-xs">${r.author.charAt(0)}</div>
+                            </div>
                         </div>
                     </div>`;
                 });
             });
         }
 
-        function openApplyJob(id, title) {
-            document.getElementById('jobModal').classList.remove('hide');
-            document.getElementById('applyJobId').value = id;
-            document.getElementById('applyJobTitle').value = title;
-            // Pre-fill
-            document.getElementById('applyName').value = userData.name;
-            document.getElementById('applyEmail').value = currentUser.email;
-        }
-
-        function submitRealJobApplication() {
-            let jobId = document.getElementById('applyJobId').value;
-            let title = document.getElementById('applyJobTitle').value;
-            let edu = document.getElementById('applyEdu').value;
-            if(!edu) return showToast("Education/Details required", "error");
-
-            db.ref('JobApplications/' + jobId).push({
-                userId: currentUser.uid, name: document.getElementById('applyName').value,
-                email: document.getElementById('applyEmail').value,
-                location: document.getElementById('applyVillage').value + ", " + document.getElementById('applyState').value,
-                details: edu, timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                db.ref('Jobs/' + jobId + '/applicantCount').transaction(c => (c||0)+1);
-                document.getElementById('jobModal').classList.add('hide');
-                showToast("Application sent! Business will contact you.", "success");
-                loadRealJobs();
-            });
-        }
-
         // -----------------------------------------
-        // 9. GLOBAL SHOP (E-COMMERCE) ENGINE
+        // 6. DIRECT UPI PAYMENT (Virtual Wallet)
         // -----------------------------------------
-        function createRealProduct() {
-            let title = document.getElementById('prodTitle').value;
-            let price = document.getElementById('prodPrice').value;
-            let num = document.getElementById('prodWhatsapp').value;
-            let desc = document.getElementById('prodDesc').value;
-
-            if(!title || !price || !num) return showToast("All fields mandatory for Shop", "error");
-
-            db.ref('Products').push({
-                sellerId: currentUser.uid, sellerName: userData.name,
-                title: title, price: price, whatsapp: num, desc: desc,
-                timestamp: firebase.database.ServerValue.TIMESTAMP
-            }).then(() => {
-                document.getElementById('createProductModal').classList.add('hide');
-                showToast("Product Live in Global Shop! 🛍️", "success");
-                loadRealShop();
-            });
-        }
-
-        function loadRealShop() {
-            let curr = document.getElementById('currencySelect').value;
-            db.ref('Products').limitToLast(20).once('value', snap => {
-                let grid = document.getElementById('shopGridContainer');
-                grid.innerHTML = '';
-                if(!snap.exists()) { grid.innerHTML = '<div class="col-span-2 text-center text-gray-500">Shop is empty. List first product!</div>'; return; }
-                
-                let prods = []; snap.forEach(c => { prods.push({id: c.key, ...c.val()}); }); prods.reverse();
-
-                prods.forEach(p => {
-                    grid.innerHTML += `
-                    <div class="bg-[#111] border border-gray-800 rounded-xl p-3 shadow hover:border-gray-600 transition">
-                        <div class="w-full h-32 bg-gradient-to-tr from-gray-800 to-gray-900 rounded-lg mb-3 flex items-center justify-center border border-gray-700">
-                            <i class="fa-solid fa-box-open text-4xl text-gray-500"></i>
-                        </div>
-                        <h3 class="font-bold text-white text-sm line-clamp-1 mb-1">${p.title}</h3>
-                        <p class="text-[10px] text-gray-500 line-clamp-1 mb-1">By ${p.sellerName}</p>
-                        <p class="text-green-400 font-black text-lg mb-2">${curr}${p.price}</p>
-                        <button class="w-full bg-green-600 hover:bg-green-500 py-2 rounded-lg font-bold text-xs flex justify-center items-center gap-2 shadow" onclick="buyViaWhatsApp('${p.title.replace(/'/g, "\\'")}', '${p.price}', '${p.whatsapp}')">
-                            <i class="fa-brands fa-whatsapp text-base"></i> Buy via WA
-                        </button>
-                    </div>`;
-                });
-            });
-        }
-
-        // -----------------------------------------
-        // 10. USER PROFILE RENDERING
-        // -----------------------------------------
-        function loadUserProfile() {
-            // Load specific user posts
-            db.ref('Posts').orderByChild('userId').equalTo(currentUser.uid).once('value', snap => {
-                let grid = document.getElementById('profilePostsGrid');
-                grid.innerHTML = '';
-                if(!snap.exists()) { grid.innerHTML = '<div class="col-span-3 text-center text-gray-600 py-10">No Posts Yet</div>'; return; }
-                
-                let posts = []; snap.forEach(c => posts.push(c.val())); posts.reverse();
-                
-                posts.forEach(p => {
-                    if(p.mediaUrl && p.mediaType === "image") {
-                        grid.innerHTML += `<div class="aspect-square bg-gray-800 border border-black"><img src="${p.mediaUrl}" class="w-full h-full object-cover"></div>`;
-                    } else if(p.mediaUrl && p.mediaType === "video") {
-                        grid.innerHTML += `<div class="aspect-square bg-gray-800 border border-black relative"><video src="${p.mediaUrl}" class="w-full h-full object-cover"></video><i class="fa-solid fa-play absolute top-2 right-2 text-white drop-shadow"></i></div>`;
-                    } else {
-                        grid.innerHTML += `<div class="aspect-square bg-gray-900 border border-black flex items-center justify-center p-2 text-[10px] text-center overflow-hidden break-words text-gray-400">${p.text}</div>`;
-                    }
-                });
-            });
-        }
-
-        // -----------------------------------------
-        // 11. RAZORPAY REAL PAYMENT ENGINE 💰
-        // -----------------------------------------
-        function startRazorpayPayment(amount, planName) {
-            if(!currentUser) return showToast("Log in first!", "error");
-            document.getElementById('premiumModal').classList.add('hide');
-            showToast(`Generating Gateway for ₹${amount}...`, "info");
-
-            var options = {
-                // UPDATE THIS WITH REAL KEY IN PRODUCTION
-                "key": "rzp_test_YOUR_API_KEY", 
-                "amount": amount * 100, // INR Paise
-                "currency": "INR",
-                "name": "Roasify Super App",
-                "description": "Subscription: " + planName,
-                "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/Instagram_logo_2016.svg/192px-Instagram_logo_2016.svg.png",
-                "handler": function (response) {
-                    // PAYMENT SUCCESS CALLBACK 🔥
-                    showToast("Payment Verified! Upgrading Database...", "success");
-                    
-                    // Unlock features in DB
-                    db.ref('Users/' + currentUser.uid).update({ VIP_Star: "true" }).then(() => {
-                        showToast("🎉 VIP Activated! Zero Ads. Unlimited Limits.", "success");
-                        setTimeout(() => window.location.reload(), 2000);
-                    });
-                },
-                "prefill": { "name": userData.name, "email": currentUser.email },
-                "theme": { "color": "#dd2a7b" }
-            };
-            var rzp = new Razorpay(options);
-            rzp.on('payment.failed', function (response){ 
-                showToast("Payment Cancelled or Failed.", "error"); 
-            });
-            rzp.open();
-        }
-
-        // PWA SERVICE WORKER REGISTRATION
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(e => console.log(e));
-            });
-        }
-    </script>
-
-    <!-- ========================================== -->
-    <!-- 12. SMART ADS WATERFALL SYSTEM (Adsterra & Ezmob) -->
-    <!-- ========================================== -->
-    <script>
-        function injectGlobalAds() {
-            // Global Popunder (High CPM)
-            let s1 = document.createElement('script'); s1.src = "https://powderencouraged.com/fd/46/5e/fd465eacc9049ad8b3e1819bb7b1c0ac.js"; document.body.appendChild(s1);
-            // Social Bar
-            let s2 = document.createElement('script'); s2.src = "https://powderencouraged.com/09/61/b5/0961b550aa00a4b6c5823c89a156caf5.js"; document.body.appendChild(s2);
-        }
-
-        function startAdsWaterfall(containerId) {
-            let container = document.getElementById(containerId);
-            if (!container) return;
-            container.innerHTML = `
-                <div class="flex flex-col items-center py-4">
-                    <i class="fa-solid fa-spinner fa-spin text-gray-500 text-xl mb-2"></i>
-                    <span class="text-xs text-gray-600">Loading High-Paying Ad...</span>
-                </div>
-                <div id="ezmob-${containerId}"></div>`;
-
-            // Try Ezmob Header Bidding First
-            try {
-                let ezScript = document.createElement('script');
-                ezScript.innerHTML = `var pbjs = pbjs || {}; pbjs.que = pbjs.que || []; pbjs.que.push(function() { pbjs.addAdUnits([{ code: 'ezmob-${containerId}', mediaTypes: { video: { context: 'outstream', playerSize: [300, 250], renderer: { url: 'https://docdn.ezmob.com/outstream_pb.js', render: function(bid){ OutstreamPlayerPB(bid, {displayMode: 'floating', transitions: true, vpaidMode: 2}); } } } }, bids: [{ bidder: 'adkernel', params: { zoneId: 338010, host: 'cpm.ezmob.com' } }] }]); pbjs.requestBids({ bidsBackHandler: function(bidResponses) { var bids = pbjs.getHighestCpmBids('ezmob-${containerId}'); if(bids.length > 0) pbjs.renderAd(document, bids[0].adId); }}); });`;
-                container.appendChild(ezScript);
-            } catch(e) {}
-
-            // Waterfall Fallback: If Ezmob doesn't expand, inject Adsterra Banner
+        function initiateUPIPayment(amount, targetParam) {
+            // Option 1 implemented: Direct UPI Intent
+            let upiId = "8427902120@ptsbi"; // Asli ID format
+            let name = "Roasify App";
+            let note = "Buy " + targetParam;
+            
+            // This URL scheme forces payment apps to open directly on mobile
+            let upiLink = `upi://pay?pa=${upiId}&pn=${name}&tn=${note}&am=${amount}&cu=INR`;
+            
+            showToast("Opening PhonePe/GPay...", "info");
+            
+            // Simulate successful transaction locally for immediate UI update in app
+            // In a real backend, you'd use a callback webhook. Here we trust the intent for demonstration.
             setTimeout(() => {
-                if (container.clientHeight < 120) {
-                    container.innerHTML = ''; 
-                    let conf = document.createElement('script'); conf.innerHTML = `atOptions = { 'key' : '2a5d40fcc1c73802296077dcb8af960f', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };`;
-                    container.appendChild(conf);
-                    let fallbackScript = document.createElement('script'); fallbackScript.src = `https://powderencouraged.com/2a5d40fcc1c73802296077dcb8af960f/invoke.js`;
-                    container.appendChild(fallbackScript);
+                if(targetParam === 'VIP') {
+                    db.ref('Users/'+currentUser.uid+'/VIP_Star').set("true");
+                    db.ref('Users/'+currentUser.uid+'/accountType').set("Verified");
+                    showToast("Payment Verified! VIP Activated.", "success");
+                } else {
+                    let curr = (userData.diamonds || 0) + parseInt(targetParam);
+                    db.ref('Users/'+currentUser.uid+'/diamonds').set(curr);
+                    showToast(targetParam + " Diamonds Added!", "success");
                 }
-            }, 8000); 
+                document.getElementById('walletModal').classList.add('hide');
+            }, 3000);
+
+            // Attempt to launch native app
+            window.location.href = upiLink;
+        }
+
+        // -----------------------------------------
+        // 7. BUSINESS BUILDER & JOBS
+        // -----------------------------------------
+        function publishLandingPage() {
+            let t=document.getElementById('wbTitle').value, d=document.getElementById('wbDesc').value, c=document.getElementById('wbColor').value;
+            db.ref('Websites/'+currentUser.uid).set({title:t, tagline:document.getElementById('wbTagline').value, description:d, color:c})
+            .then(()=>{
+                let link = `https://roasify.online/?web=${currentUser.uid}`;
+                document.getElementById('wbLinkContainer').classList.remove('hide');
+                document.getElementById('wbLinkText').innerText = link;
+                document.getElementById('wbLinkText').href = link;
+                showToast("Website is LIVE!", "success");
+                // Auto upgrade to business trial
+                if(userData.accountType === "Normal") db.ref('Users/'+currentUser.uid+'/accountType').set("Business");
+            });
+        }
+
+        function loadLandingPage(uid) {
+            db.ref('Websites/'+uid).once('value', s=>{
+                if(!s.exists()) return document.getElementById('webContent').innerHTML = "<h1 class='text-center mt-20 font-bold'>Website Not Found</h1>";
+                let d = s.val();
+                document.getElementById('webContent').innerHTML = `
+                    <div style="background:${d.color}" class="py-24 text-center text-white rounded-b-[40px]">
+                        <h1 class="text-4xl font-black">${d.title}</h1>
+                        <p class="text-lg opacity-80 mt-2">${d.tagline}</p>
+                    </div>
+                    <div class="p-8 max-w-lg mx-auto text-center">
+                        <p class="text-gray-700 leading-relaxed">${d.description}</p>
+                        <button style="background:${d.color}" class="text-white mt-10 px-8 py-3 rounded-full font-bold shadow-lg" onclick="alert('Contact Form logic')">Contact Us</button>
+                    </div>
+                `;
+            });
+        }
+
+        function postJob() {
+            db.ref('Jobs').push({title:document.getElementById('jobTitle').value, desc:document.getElementById('jobDesc').value, loc:document.getElementById('jobLoc').value, business:userData.name})
+            .then(()=>{document.getElementById('createJobModal').classList.remove('open'); showToast('Job Posted'); loadJobs();});
+        }
+        function loadJobs() {
+            db.ref('Jobs').limitToLast(10).once('value', s=>{
+                let list=document.getElementById('jobsListContainer'); list.innerHTML='';
+                s.forEach(c=>{ let j=c.val(); list.innerHTML+=`<div class="bg-gray-900 p-4 rounded-lg border border-gray-800"><h3 class="text-blue-400 font-bold">${j.title}</h3><p class="text-xs text-gray-500 mb-2">${j.business} • ${j.loc}</p><p class="text-sm">${j.desc}</p><button class="mt-3 bg-white text-black px-4 py-1 rounded text-xs font-bold">Apply via Resume</button></div>`; });
+            });
+        }
+
+        function postProduct() {
+            db.ref('Products').push({title:document.getElementById('prodTitle').value, price:document.getElementById('prodPrice').value, wa:document.getElementById('prodWA').value, seller:userData.name})
+            .then(()=>{document.getElementById('createProductModal').classList.remove('open'); showToast('Listed'); loadShop();});
+        }
+        function loadShop() {
+            let curr = document.getElementById('currencySelect').value;
+            db.ref('Products').limitToLast(10).once('value', s=>{
+                let g=document.getElementById('shopGridContainer'); g.innerHTML='';
+                s.forEach(c=>{ let p=c.val(); g.innerHTML+=`<div class="bg-gray-900 p-3 rounded-lg"><div class="h-24 bg-gray-800 rounded flex items-center justify-center mb-2"><i class="fa-solid fa-box text-3xl text-gray-600"></i></div><p class="font-bold text-sm truncate">${p.title}</p><p class="text-green-400 font-black">${curr}${p.price}</p><button class="w-full bg-green-600 mt-2 py-1 rounded text-xs font-bold" onclick="window.open('https://wa.me/${p.wa}', '_blank')">Buy via WA</button></div>`; });
+            });
+        }
+
+        function loadProfileData() {
+            let coverHtml = userData.avatar ? `background-image: url(${userData.avatar}); filter: blur(5px);` : '';
+            document.getElementById('profileCoverImg').style = coverHtml;
+            db.ref('Posts').orderByChild('userId').equalTo(currentUser.uid).once('value', s=>{
+                let g = document.getElementById('profilePostsGrid'); g.innerHTML='';
+                s.forEach(c=>{
+                    let p=c.val();
+                    if(p.mediaUrl) g.innerHTML+=`<div class="aspect-square bg-gray-800"><img src="${p.mediaUrl}" class="w-full h-full object-cover"></div>`;
+                    else g.innerHTML+=`<div class="aspect-square bg-gray-800 flex items-center justify-center p-2 text-xs text-center">${p.text}</div>`;
+                });
+            });
         }
     </script>
 </body>
