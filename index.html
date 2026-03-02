@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="hi">
 <head>
@@ -22,20 +21,21 @@
         /* ==========================================
            1. CORE APP STYLING & SECURITY
            ========================================== */
-        body { background-color: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; width: 100vw; height: 100vh; user-select: none; /* Anti-copy */ }
+        body { background-color: #000; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; overflow: hidden; width: 100vw; height: 100vh; user-select: none; }
         .hide { display: none !important; }
         
         /* Gradients & Animations */
         .gradient-bg { background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af); }
         .gradient-text { background: linear-gradient(135deg, #f58529, #dd2a7b); -webkit-background-clip: text; color: transparent; }
         
-        /* Advanced VIP Badges */
-        .badge-star { animation: pulseStar 1.5s infinite; text-shadow: 0 0 15px #FFD700; color: #FFD700; }
+        /* Advanced VIP Badges (As per instructions) */
+        .badge-star { animation: pulseStar 1.5s infinite; text-shadow: 0 0 15px #FFD700; color: #FFD700; position: relative;}
         .badge-green-gear { position: relative; display: inline-flex; align-items: center; justify-content: center; color: #22c55e; }
         .badge-blue-neon { position: relative; display: inline-flex; align-items: center; justify-content: center; color: #3b82f6; text-shadow: 0 0 10px #3b82f6, 0 0 20px #3b82f6; animation: neonFlicker 2s infinite alternate; }
+        .inner-tick { position: absolute; font-size: 8px; color: white; top: 50%; left: 50%; transform: translate(-50%, -50%); }
         
         @keyframes pulseStar { 0% { transform: scale(1); } 50% { transform: scale(1.3) rotate(15deg); } 100% { transform: scale(1); } }
-        @keyframes neonFlicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; } }
+        @keyframes neonFlicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.8; text-shadow: 0 0 5px #3b82f6; } }
         @keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.5); } 100% { transform: scale(1); } }
 
         /* Custom Scrollbars */
@@ -59,40 +59,48 @@
         #adOverlay { position: fixed; top:0; left:0; width:100vw; height:100vh; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
         /* Emoji Reaction Overlay */
-        .reaction-bar { position: absolute; bottom: 50px; left: 20px; background: rgba(30,30,30,0.9); border-radius: 30px; padding: 10px; display: flex; gap: 15px; transform: scale(0); transition: transform 0.2s; z-index: 50;}
+        .reaction-bar { position: absolute; bottom: 40px; left: 10px; background: rgba(30,30,30,0.95); border: 1px solid #444; border-radius: 30px; padding: 8px 15px; display: flex; gap: 15px; transform: scale(0); transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 50;}
         .reaction-bar.active { transform: scale(1); }
+        .react-emoji { font-size: 24px; cursor: pointer; transition: transform 0.2s; }
+        .react-emoji:hover { transform: scale(1.3); }
 
         /* Settings Menu Styling */
         .settings-item { padding: 15px 20px; border-bottom: 1px solid #1a1a1a; display: flex; align-items: center; gap: 15px; cursor: pointer; transition: background 0.2s;}
         .settings-item:hover { background: #111; }
+        
+        #mediaPreviewArea img, #mediaPreviewArea video { width: 100%; max-height: 300px; object-fit: contain; background: #111; border-radius: 10px;}
     </style>
 </head>
-<body oncontextmenu="return false;" onselectstart="return false;" ondragstart="return false;"> <!-- Security Locks -->
+<!-- ANTI-HACK SECURITY -->
+<body oncontextmenu="return false;" onselectstart="return false;" ondragstart="return false;" onkeydown="if(event.ctrlKey && (event.keyCode === 85 || event.keyCode === 83 || event.keyCode ===73)) return false;">
 
-    <!-- TOAST NOTIFICATION -->
-    <div id="toastBox" class="fixed top-[-100px] left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-600 text-white px-6 py-3 rounded-full shadow-2xl opacity-0 flex items-center gap-3 w-max max-w-[90%] z-[10000] transition-all duration-400">
+    <!-- ========================================== -->
+    <!-- GLOBAL OVERLAYS & TOASTS -->
+    <!-- ========================================== -->
+    <div id="toastBox" class="fixed top-[-100px] left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-600 text-white px-6 py-3 rounded-full shadow-[0_5px_20px_rgba(0,0,0,0.5)] opacity-0 flex items-center gap-3 w-max max-w-[90%] z-[10000] transition-all duration-400">
         <i id="toastIcon" class="fa-solid fa-bell text-blue-400"></i>
         <span id="toastMsg" class="text-sm font-bold">Message</span>
     </div>
 
-    <!-- INTERSTITIAL AD OVERLAY (For Like Limits & Free Users) -->
+    <!-- INTERSTITIAL AD OVERLAY -->
     <div id="adOverlay" class="hide">
-        <div class="text-right w-full p-4"><button id="skipAdBtn" class="bg-gray-800 text-gray-400 px-4 py-1 rounded-full text-xs font-bold" disabled>Skip in 5s</button></div>
+        <div class="text-right w-full p-4"><button id="skipAdBtn" class="bg-gray-800 text-gray-400 px-5 py-2 rounded-full text-xs font-bold" disabled>Wait 5s...</button></div>
         <div class="flex-1 flex flex-col items-center justify-center w-full">
-            <p class="text-xs text-gray-500 uppercase tracking-widest mb-4">Advertisement</p>
-            <div id="fullScreenAdContainer" class="w-[300px] h-[250px] bg-gray-900 flex items-center justify-center border border-gray-700">
-                <i class="fa-solid fa-spinner fa-spin text-gray-500 text-3xl"></i>
+            <p class="text-xs text-gray-500 uppercase tracking-widest mb-4">Sponsored Advertisement</p>
+            <div id="fullScreenAdContainer" class="w-[300px] h-[250px] bg-[#111] flex flex-col items-center justify-center border border-gray-800 rounded-lg">
+                <!-- Adsterra/Ezmob loads here -->
+                <i class="fa-solid fa-circle-notch fa-spin text-gray-600 text-3xl"></i>
             </div>
-            <p class="text-gray-400 mt-6 text-center px-8 text-sm">Ad-Free experience ke liye Premium/VIP Upgrade karein.</p>
-            <button class="mt-4 text-yellow-500 font-bold border border-yellow-500 px-6 py-2 rounded-full" onclick="document.getElementById('adOverlay').classList.add('hide'); document.getElementById('walletModal').classList.remove('hide')">Buy Diamonds / VIP</button>
+            <p class="text-gray-400 mt-8 text-center px-8 text-sm">Ad-Free experience aur unlimited likes ke liye Premium lijiye.</p>
+            <button class="mt-6 text-yellow-500 font-bold border-2 border-yellow-500 px-8 py-3 rounded-full hover:bg-yellow-500 hover:text-black transition" onclick="document.getElementById('adOverlay').classList.add('hide'); document.getElementById('walletModal').classList.remove('hide')">Buy VIP / Diamonds</button>
         </div>
     </div>
 
     <!-- BUSINESS LANDING PAGE VIEW -->
     <div id="businessWebsiteView" class="fixed top-0 left-0 w-full h-full bg-white text-black z-[99999] overflow-y-auto hide">
         <div id="webContent" class="min-h-screen"></div>
-        <button class="fixed bottom-6 left-6 bg-black text-white px-5 py-3 rounded-full shadow-2xl text-sm font-bold" onclick="window.location.href='/'">
-            <i class="fa-solid fa-arrow-left"></i> Roasify App Return
+        <button class="fixed bottom-6 left-6 bg-black text-white px-5 py-3 rounded-full shadow-2xl text-sm font-bold border border-gray-700" onclick="window.location.href='/'">
+            <i class="fa-solid fa-arrow-left"></i> App Par Wapas Jayein
         </button>
     </div>
 
@@ -104,7 +112,7 @@
             <i class="fa-brands fa-r-project text-white text-6xl"></i>
         </div>
         <h1 class="text-5xl font-black text-white mb-2 tracking-tighter">Roasify</h1>
-        <p class="text-gray-400 mb-12 text-sm text-center px-6 font-medium">Business, Jobs, Web Builder & Social Hub</p>
+        <p class="text-gray-400 mb-12 text-sm text-center px-6 font-medium" id="lang-sub">Business, Jobs, Web Builder & Social Hub</p>
         
         <button onclick="signInWithGoogle()" class="bg-white text-black px-8 py-4 rounded-full font-bold flex items-center gap-4 hover:scale-105 transition shadow-xl text-lg">
             <i class="fa-brands fa-google text-blue-600 text-xl"></i> Google Se Login
@@ -118,55 +126,62 @@
         
         <!-- HEADER -->
         <header class="flex justify-between items-center p-4 border-b border-gray-900 bg-black/95 backdrop-blur-md z-20">
-            <h1 id="headerTitle" class="text-2xl font-black font-serif">Roasify</h1>
-            <div class="flex gap-6 text-xl items-center">
+            <h1 id="headerTitle" class="text-2xl font-black tracking-wide">Roasify</h1>
+            <div class="flex gap-5 text-xl items-center">
                 <!-- Virtual Currency Wallet -->
-                <div class="bg-gray-900 border border-gray-700 px-3 py-1 rounded-full flex items-center gap-2 cursor-pointer hover:bg-gray-800" onclick="document.getElementById('walletModal').classList.remove('hide')">
-                    <i class="fa-regular fa-gem text-cyan-400 text-sm"></i>
+                <div class="bg-[#111] border border-gray-700 px-4 py-1.5 rounded-full flex items-center gap-2 cursor-pointer hover:bg-gray-800 transition" onclick="document.getElementById('walletModal').classList.remove('hide')">
+                    <i class="fa-regular fa-gem text-cyan-400 text-sm fa-bounce"></i>
                     <span id="walletDiamonds" class="text-white font-bold text-sm">0</span>
                 </div>
-                <i class="fa-brands fa-whatsapp text-gray-300 cursor-pointer" onclick="showToast('Chats Coming Soon', 'info')"></i>
+                <i class="fa-solid fa-magnifying-glass text-gray-300 cursor-pointer" onclick="showToast('Global Search Loading...', 'info')"></i>
                 <i class="fa-solid fa-bars text-white cursor-pointer" onclick="document.getElementById('settingsModal').classList.add('open')"></i>
             </div>
         </header>
 
         <!-- TABS CONTAINER -->
-        <main class="flex-1 overflow-y-auto w-full relative custom-scroll" id="mainScrollArea">
+        <main class="flex-1 overflow-y-auto w-full relative custom-scroll pb-20" id="mainScrollArea">
             
             <!-- TAB A: HOME FEED -->
-            <div id="tab-home" class="w-full pb-20">
+            <div id="tab-home" class="w-full">
                 <!-- Advanced Post Creator -->
                 <div class="p-4 border-b border-gray-900 bg-[#0a0a0a]">
                     <div class="flex gap-3 items-start">
                         <div class="w-12 h-12 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden" id="postAvatarUI"></div>
                         <div class="flex-1">
-                            <textarea id="postInputText" placeholder="Aaj ka vichar, job ya product..." class="bg-transparent text-white w-full p-2 focus:outline-none resize-none h-16 text-lg placeholder-gray-600"></textarea>
+                            <textarea id="postInputText" placeholder="Kya chal raha hai? Videos, Photos ya Gigs daalein..." class="bg-transparent text-white w-full p-2 focus:outline-none resize-none h-16 text-[15px] placeholder-gray-600"></textarea>
                             
-                            <div id="mediaPreviewArea" class="hide mb-3">
-                                <div class="remove-media" onclick="removeMedia()"><i class="fa-solid fa-xmark"></i></div>
-                                <img id="imagePreview" class="hide rounded-lg" src="">
-                                <video id="videoPreview" class="hide rounded-lg" controls></video>
+                            <div id="mediaPreviewArea" class="hide mb-3 relative">
+                                <div class="absolute top-2 right-2 bg-red-600 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer z-10" onclick="removeMedia()"><i class="fa-solid fa-xmark"></i></div>
+                                <img id="imagePreview" class="hide" src="">
+                                <video id="videoPreview" class="hide" controls></video>
                             </div>
                             
-                            <div id="uploadStatusBox" class="hide mb-3 p-2 bg-gray-900 rounded border border-gray-800">
-                                <p class="text-[10px] text-yellow-500 font-bold mb-1"><i class="fa-solid fa-spinner fa-spin"></i> Securing Media...</p>
-                                <div class="progress-bar-bg"><div id="uploadProgressBar" class="progress-bar-fill w-0"></div></div>
+                            <div id="uploadStatusBox" class="hide mb-3 p-3 bg-gray-900 rounded-lg border border-gray-800">
+                                <div class="flex justify-between text-xs mb-1">
+                                    <span class="text-yellow-500 font-bold"><i class="fa-solid fa-shield-halved"></i> Securing Media...</span>
+                                    <span id="uploadPercentTxt" class="text-white font-bold">0%</span>
+                                </div>
+                                <div class="w-full bg-gray-700 rounded-full h-1.5"><div id="uploadProgressBar" class="bg-blue-500 h-1.5 rounded-full w-0 transition-all"></div></div>
                             </div>
 
                             <div class="flex justify-between items-center border-t border-gray-800 pt-3">
-                                <div class="flex gap-5 text-gray-400 text-xl">
+                                <div class="flex gap-6 text-gray-400 text-2xl">
                                     <input type="file" id="mediaUpload" accept="image/*,video/*" class="hide" onchange="handleSecureFileSelect(event)">
-                                    <i class="fa-solid fa-image cursor-pointer hover:text-green-400" onclick="document.getElementById('mediaUpload').click()"></i>
-                                    <i class="fa-solid fa-video cursor-pointer hover:text-pink-400" onclick="document.getElementById('mediaUpload').click()"></i>
+                                    <i class="fa-solid fa-image cursor-pointer hover:text-green-400 transition" onclick="document.getElementById('mediaUpload').click()"></i>
+                                    <i class="fa-solid fa-video cursor-pointer hover:text-pink-400 transition" onclick="document.getElementById('mediaUpload').click()"></i>
+                                    <i class="fa-solid fa-link cursor-pointer hover:text-yellow-400 transition" onclick="addYoutubeLink()"></i>
                                 </div>
-                                <button id="postBtn" onclick="publishEncryptedPost()" class="bg-blue-600 px-6 py-1.5 rounded-full text-sm font-bold shadow-[0_0_10px_rgba(37,99,235,0.4)]">Share</button>
+                                <div class="flex items-center gap-3">
+                                    <p class="text-[10px] text-gray-500 text-right leading-tight">Daily Limit<br><span id="uploadsLeft" class="font-bold text-white text-sm">0</span> / 5</p>
+                                    <button id="postBtn" onclick="publishEncryptedPost()" class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 rounded-full text-sm font-bold shadow-[0_0_15px_rgba(37,99,235,0.4)] hover:scale-105 transition" id="lang-postbtn">Share</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div id="realFeedContainer" class="w-full">
-                    <div class="py-20 text-center"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-gray-600"></i></div>
+                    <div class="py-20 text-center"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-gray-600"></i><p class="mt-2 text-gray-500 text-sm">Feed load ho rahi hai...</p></div>
                 </div>
             </div>
 
@@ -176,213 +191,272 @@
             </div>
 
             <!-- TAB C: MICRO JOBS & SERVICES -->
-            <div id="tab-jobs" class="w-full hide p-4 bg-[#050505] min-h-full pb-20">
+            <div id="tab-jobs" class="w-full hide p-4 bg-[#050505] min-h-full">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-black text-blue-500">Gigs & Jobs</h2>
-                    <button class="bg-blue-600/20 text-blue-400 px-3 py-1 rounded text-xs font-bold" onclick="document.getElementById('createJobModal').classList.add('open')">+ Create</button>
+                    <h2 class="text-2xl font-black text-blue-500"><i class="fa-solid fa-briefcase text-xl"></i> Jobs Portal</h2>
+                    <button class="bg-blue-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg" onclick="document.getElementById('createJobModal').classList.add('open')">+ Nayi Job Daalein</button>
                 </div>
                 <div id="jobsListContainer" class="space-y-4"></div>
             </div>
 
-            <!-- TAB D: SHOP -->
-            <div id="tab-shop" class="w-full hide p-4 bg-[#050505] min-h-full pb-20">
+            <!-- TAB D: SHOP (Diamond Currency) -->
+            <div id="tab-shop" class="w-full hide p-4 bg-[#050505] min-h-full">
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-black text-green-500">Marketplace</h2>
+                    <h2 class="text-2xl font-black text-green-500"><i class="fa-solid fa-store text-xl"></i> Marketplace</h2>
                     <div class="flex gap-2 items-center">
-                        <select id="currencySelect" class="bg-gray-900 border border-gray-700 text-xs rounded p-1 text-white outline-none" onchange="loadMarketplace()">
+                        <select id="currencySelect" class="bg-gray-900 border border-gray-700 text-xs rounded p-2 text-white outline-none" onchange="loadMarketplace()">
                             <option value="💎">💎 Diamonds</option>
                             <option value="₹">₹ INR</option>
                             <option value="$">$ USD</option>
                         </select>
-                        <button class="bg-green-600/20 text-green-400 px-3 py-1 rounded text-xs font-bold" onclick="document.getElementById('createProductModal').classList.add('open')">+ Sell</button>
+                        <button class="bg-green-600 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg" onclick="document.getElementById('createProductModal').classList.add('open')">+ Sell Item</button>
                     </div>
                 </div>
                 <div id="shopGridContainer" class="grid grid-cols-2 gap-3"></div>
             </div>
 
-            <!-- TAB E: PROFILE -->
-            <div id="tab-profile" class="w-full hide bg-[#050505] min-h-full pb-20">
+            <!-- TAB E: ADVANCED PROFILE -->
+            <div id="tab-profile" class="w-full hide bg-[#050505] min-h-full">
                 <div class="w-full h-40 bg-gray-900 relative bg-cover bg-center" id="profileCoverImg">
                     <div class="absolute inset-0 bg-black/40"></div>
+                    <button class="absolute top-4 right-4 bg-black/60 p-2 rounded-full text-white" onclick="document.getElementById('settingsModal').classList.add('open')"><i class="fa-solid fa-gear"></i></button>
                 </div>
-                <div class="px-4 relative -mt-14 mb-4">
+                
+                <div class="px-4 relative -mt-14 mb-6">
                     <div class="flex justify-between items-end mb-3">
-                        <div class="w-28 h-28 rounded-full border-4 border-black bg-gray-800 overflow-hidden relative cursor-pointer" onclick="document.getElementById('avatarModal').classList.add('open')">
+                        <div class="w-28 h-28 rounded-full border-4 border-black bg-gray-800 overflow-hidden relative cursor-pointer shadow-xl" onclick="document.getElementById('avatarModal').classList.add('open')">
                             <div id="profileBigAvatar" class="w-full h-full flex items-center justify-center text-4xl font-bold"></div>
-                            <div class="absolute bottom-0 w-full bg-black/60 text-[10px] text-center py-1">EDIT</div>
+                            <div class="absolute bottom-0 w-full bg-black/70 text-[10px] text-center py-1 font-bold">EDIT</div>
                         </div>
                         <div class="flex gap-2">
-                            <button class="bg-gray-800 px-4 py-1.5 rounded font-bold text-xs" onclick="alert('Edit logic')">Edit Profile</button>
-                            <button class="bg-gray-800 px-3 py-1.5 rounded font-bold text-xs" onclick="navigator.clipboard.writeText('roasify.online/u/'+currentUser.uid); showToast('Profile Link Copied');"><i class="fa-solid fa-share"></i></button>
+                            <button class="bg-gray-800 border border-gray-700 px-5 py-2 rounded-full font-bold text-xs hover:bg-gray-700 transition" onclick="showToast('Edit profile opening soon')">Edit Profile</button>
                         </div>
                     </div>
-                    <h2 class="text-2xl font-black flex items-center gap-2" id="profileNameText">Name</h2>
-                    <p class="text-sm text-gray-400 mb-2" id="profileBioText">App Developer & Entrepreneur. 💎🚀</p>
                     
-                    <div class="flex gap-6 mt-4">
-                        <div class="text-center"><p class="font-black text-lg" id="statPosts">0</p><p class="text-[10px] text-gray-500">POSTS</p></div>
-                        <div class="text-center"><p class="font-black text-lg" id="statFollowers">0</p><p class="text-[10px] text-gray-500">FOLLOWERS</p></div>
-                        <div class="text-center"><p class="font-black text-lg" id="statFollowing">0</p><p class="text-[10px] text-gray-500">FOLLOWING</p></div>
+                    <h2 class="text-2xl font-black flex items-center gap-2" id="profileNameText">Name</h2>
+                    <p class="text-sm text-gray-400 mb-2" id="profileBioText">Digital Creator & Entrepreneur. 💎🚀<br><a href="#" class="text-blue-400 text-xs">roasify.online/u/profile</a></p>
+                    
+                    <div class="flex gap-8 mt-4 bg-[#111] p-4 rounded-xl border border-gray-800">
+                        <div class="text-center flex-1"><p class="font-black text-xl" id="statPosts">0</p><p class="text-[10px] text-gray-500 font-bold">POSTS</p></div>
+                        <div class="text-center flex-1"><p class="font-black text-xl" id="statFollowers">0</p><p class="text-[10px] text-gray-500 font-bold">FOLLOWERS</p></div>
+                        <div class="text-center flex-1"><p class="font-black text-xl" id="statFollowing">0</p><p class="text-[10px] text-gray-500 font-bold">FOLLOWING</p></div>
                     </div>
                 </div>
-                <div class="flex border-b border-gray-800 w-full">
-                    <div class="flex-1 text-center py-3 border-b-2 border-white text-white"><i class="fa-solid fa-border-all"></i></div>
-                    <div class="flex-1 text-center py-3 text-gray-600"><i class="fa-solid fa-video"></i></div>
+                <div class="flex border-b border-gray-800 w-full sticky top-0 bg-black z-10">
+                    <div class="flex-1 text-center py-3 border-b-2 border-white text-white"><i class="fa-solid fa-border-all text-xl"></i></div>
+                    <div class="flex-1 text-center py-3 text-gray-600"><i class="fa-solid fa-video text-xl"></i></div>
+                    <div class="flex-1 text-center py-3 text-gray-600"><i class="fa-solid fa-bookmark text-xl"></i></div>
                 </div>
-                <div id="profilePostsGrid" class="grid grid-cols-3 gap-[1px]"></div>
+                <div id="profilePostsGrid" class="grid grid-cols-3 gap-[2px]"></div>
             </div>
         </main>
 
         <!-- BOTTOM NAV -->
-        <nav class="flex justify-around items-center p-2 bg-[#000] border-t border-gray-900 fixed bottom-0 w-full z-30 pb-5">
-            <i id="nav-home" class="fa-solid fa-house text-2xl nav-active p-2 cursor-pointer" onclick="switchTab('tab-home', 'nav-home')"></i>
-            <i id="nav-reels" class="fa-brands fa-tiktok text-2xl nav-inactive p-2 cursor-pointer" onclick="switchTab('tab-reels', 'nav-reels')"></i>
-            <div class="w-12 h-12 rounded-full gradient-bg flex items-center justify-center cursor-pointer transform -translate-y-3 shadow-[0_0_10px_#dd2a7b]" onclick="switchTab('tab-home', 'nav-home'); document.getElementById('postInputText').focus();">
-                <i class="fa-solid fa-plus text-white text-xl"></i>
+        <nav class="flex justify-around items-center p-2 bg-[#000] border-t border-gray-900 fixed bottom-0 w-full z-30 pb-6 shadow-[0_-10px_30px_rgba(0,0,0,0.9)]">
+            <div class="flex flex-col items-center p-2 cursor-pointer" onclick="switchTab('tab-home', 'nav-home')">
+                <i id="nav-home" class="fa-solid fa-house text-2xl nav-active transition-all"></i>
+                <span class="text-[9px] mt-1 font-bold text-gray-400" id="lang-nav1">Home</span>
             </div>
-            <i id="nav-shop" class="fa-solid fa-store text-2xl nav-inactive p-2 cursor-pointer" onclick="switchTab('tab-shop', 'nav-shop')"></i>
-            <div id="nav-profile" class="w-8 h-8 rounded-full border-2 border-gray-700 bg-gray-800 overflow-hidden cursor-pointer" onclick="switchTab('tab-profile', 'nav-profile')">
-                <div id="navAvatarIcon" class="w-full h-full flex items-center justify-center text-xs font-bold text-white"></div>
+            <div class="flex flex-col items-center p-2 cursor-pointer" onclick="switchTab('tab-reels', 'nav-reels')">
+                <i id="nav-reels" class="fa-brands fa-tiktok text-2xl nav-inactive transition-all"></i>
+                <span class="text-[9px] mt-1 font-bold text-gray-400" id="lang-nav2">Reels</span>
+            </div>
+            <div class="flex flex-col items-center p-1 cursor-pointer transform -translate-y-4" onclick="document.getElementById('mediaUpload').click(); switchTab('tab-home', 'nav-home');">
+                <div class="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:scale-110 transition-all">
+                    <i class="fa-solid fa-plus text-black text-2xl"></i>
+                </div>
+            </div>
+            <div class="flex flex-col items-center p-2 cursor-pointer" onclick="switchTab('tab-shop', 'nav-shop')">
+                <i id="nav-shop" class="fa-solid fa-store text-2xl nav-inactive transition-all"></i>
+                <span class="text-[9px] mt-1 font-bold text-gray-400" id="lang-nav3">Shop</span>
+            </div>
+            <div class="flex flex-col items-center p-2 cursor-pointer" onclick="switchTab('tab-profile', 'nav-profile')">
+                <div id="nav-profile" class="w-7 h-7 rounded-full border-2 border-gray-700 bg-gray-800 overflow-hidden transition-all">
+                    <div id="navAvatarIcon" class="w-full h-full flex items-center justify-center text-xs font-bold text-white"></div>
+                </div>
+                <span class="text-[9px] mt-1 font-bold text-gray-400" id="lang-nav4">Profile</span>
             </div>
         </nav>
     </div>
 
     <!-- ========================================== -->
-    <!-- 3. ALL MODALS & BOTTOM SHEETS -->
+    <!-- 3. MASSIVE MODALS SYSTEM -->
     <!-- ========================================== -->
 
-    <!-- WALLET & DIAMONDS MODAL (Direct UPI System) -->
-    <div id="walletModal" class="absolute inset-0 modal-bg hide flex items-center justify-center p-4 z-[100]">
-        <div class="bg-[#111] w-full max-w-md rounded-2xl border border-gray-700 p-6 relative">
-            <i class="fa-solid fa-xmark absolute top-4 right-4 text-xl cursor-pointer text-gray-400" onclick="document.getElementById('walletModal').classList.add('hide')"></i>
-            <div class="text-center mb-6">
-                <i class="fa-regular fa-gem text-5xl text-cyan-400 mb-2 fa-bounce"></i>
-                <h2 class="text-2xl font-black">Virtual Wallet</h2>
-                <p class="text-gray-400 text-xs">Buy courses, gifts & services using Diamonds.</p>
+    <!-- A. VIRTUAL WALLET & PAYMENT GATEWAYS (OxaPay, Plisio, UPI) -->
+    <div id="walletModal" class="absolute inset-0 modal-bg hide flex flex-col items-center justify-end z-[900]">
+        <div class="bg-[#111] w-full h-[85vh] rounded-t-3xl border-t border-gray-700 p-6 relative overflow-y-auto">
+            <i class="fa-solid fa-xmark absolute top-6 right-6 text-2xl cursor-pointer text-gray-400 bg-gray-800 rounded-full w-8 h-8 flex justify-center items-center" onclick="document.getElementById('walletModal').classList.add('hide')"></i>
+            
+            <div class="text-center mb-6 mt-4">
+                <div class="w-20 h-20 bg-cyan-900/30 rounded-full flex items-center justify-center mx-auto mb-3 border border-cyan-500">
+                    <i class="fa-regular fa-gem text-4xl text-cyan-400 fa-beat"></i>
+                </div>
+                <h2 class="text-2xl font-black">Roasify Wallet</h2>
+                <p class="text-gray-400 text-xs">1 Diamond = ₹2</p>
             </div>
             
-            <div class="bg-gray-900 rounded-xl p-4 text-center mb-6 border border-gray-800">
-                <p class="text-sm text-gray-500">Current Balance</p>
-                <p class="text-4xl font-black text-white"><span id="modalDiamondBal">0</span> <i class="fa-solid fa-gem text-cyan-500 text-2xl"></i></p>
+            <div class="bg-black rounded-2xl p-5 text-center mb-8 border border-gray-800 shadow-inner">
+                <p class="text-sm text-gray-500 font-bold mb-1">Total Diamonds</p>
+                <p class="text-5xl font-black text-white"><span id="modalDiamondBal">0</span></p>
             </div>
 
+            <h3 class="font-bold text-gray-400 text-sm mb-3 uppercase tracking-widest">Buy Diamonds & VIP</h3>
+            
+            <!-- Payment Methods -->
             <div class="space-y-3">
-                <button class="w-full bg-gray-800 border border-gray-700 py-3 rounded-xl flex justify-between px-4 items-center hover:bg-gray-700" onclick="initiateUPIPayment(100, 50)">
-                    <span class="font-bold text-cyan-400">50 Diamonds</span>
-                    <span class="text-sm">Pay ₹100 via UPI</span>
+                <!-- Direct UPI -->
+                <button class="w-full bg-gray-800 border border-gray-600 p-4 rounded-2xl flex justify-between items-center hover:bg-gray-700 transition" onclick="initiatePayment('upi', 100, 50)">
+                    <div class="flex items-center gap-3">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e1/UPI-Logo-vector.svg" class="w-10 h-10 bg-white p-1 rounded">
+                        <div class="text-left"><p class="font-bold text-cyan-400">50 Diamonds</p><p class="text-xs text-gray-400">Direct UPI (₹100)</p></div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-500"></i>
                 </button>
-                <button class="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 text-black py-3 rounded-xl flex justify-between px-4 items-center font-black" onclick="initiateUPIPayment(1000, 'VIP')">
-                    <span>VIP STAR Account</span>
-                    <span>Pay ₹1000 / Life</span>
+                
+                <!-- OxaPay Crypto -->
+                <button class="w-full bg-gray-800 border border-gray-600 p-4 rounded-2xl flex justify-between items-center hover:bg-gray-700 transition" onclick="initiatePayment('oxapay', 5, 200)">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-blue-600 text-white rounded flex items-center justify-center font-black">Oxa</div>
+                        <div class="text-left"><p class="font-bold text-cyan-400">200 Diamonds</p><p class="text-xs text-gray-400">OxaPay Crypto ($5)</p></div>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-500"></i>
+                </button>
+
+                <!-- Ultimate VIP Plan (Plisio) -->
+                <button class="w-full bg-gradient-to-r from-yellow-600 to-yellow-500 p-4 rounded-2xl flex justify-between items-center shadow-[0_0_20px_rgba(202,138,4,0.3)] mt-6" onclick="initiatePayment('plisio', 12, 'VIP')">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-black text-yellow-500 rounded-full flex items-center justify-center font-black text-xl"><i class="fa-solid fa-star"></i></div>
+                        <div class="text-left"><p class="font-black text-black text-lg">VIP STAR Plan</p><p class="text-xs text-black/70 font-bold">Plisio Crypto / ₹1000</p></div>
+                    </div>
+                    <span class="bg-black text-white px-3 py-1 rounded-lg text-xs font-bold">BUY</span>
                 </button>
             </div>
-            <p class="text-[10px] text-gray-500 text-center mt-4">100% Safe Payments via Native UPI Apps</p>
+            <p class="text-[10px] text-gray-600 text-center mt-8">Secure Payments via Plisio, OxaPay & UPI Intent</p>
         </div>
     </div>
 
-    <!-- MASSIVE SETTINGS MENU (Instagram Clone) -->
-    <div id="settingsModal" class="fixed top-0 left-0 w-full h-full bg-[#000] z-[500] bottom-sheet overflow-y-auto">
-        <div class="p-4 border-b border-gray-900 flex items-center sticky top-0 bg-black z-10">
-            <i class="fa-solid fa-arrow-left text-xl cursor-pointer mr-4" onclick="document.getElementById('settingsModal').classList.remove('open')"></i>
-            <h2 class="text-xl font-bold">Settings and activity</h2>
+    <!-- B. MASSIVE SETTINGS MENU -->
+    <div id="settingsModal" class="fixed top-0 left-0 w-full h-full bg-[#000] z-[900] bottom-sheet overflow-y-auto">
+        <div class="p-4 border-b border-gray-900 flex justify-between items-center sticky top-0 bg-black z-10">
+            <div class="flex items-center">
+                <i class="fa-solid fa-arrow-left text-xl cursor-pointer mr-4" onclick="document.getElementById('settingsModal').classList.remove('open')"></i>
+                <h2 class="text-xl font-bold">Settings and activity</h2>
+            </div>
         </div>
         
         <div class="pb-20">
-            <!-- Search -->
-            <div class="px-4 py-2"><input type="text" placeholder="Search" class="w-full bg-gray-900 rounded-lg px-4 py-2 outline-none text-sm"></div>
+            <div class="px-4 py-3"><input type="text" placeholder="Search settings" class="w-full bg-gray-900 rounded-xl px-4 py-3 outline-none text-sm text-white focus:border focus:border-gray-600"></div>
             
-            <div class="px-4 py-3 text-xs font-bold text-gray-500 uppercase mt-2">Your account</div>
-            <div class="settings-item"><i class="fa-regular fa-user text-xl w-6"></i> <span>Accounts Center<br><span class="text-[10px] text-gray-500">Password, security, personal details</span></span></div>
+            <!-- Exact list provided by user -->
+            <div class="px-4 py-3 text-[11px] font-black text-gray-500 uppercase tracking-wider mt-2">Your account</div>
+            <div class="settings-item"><i class="fa-regular fa-user text-xl w-8 text-gray-300"></i> <div><p class="font-bold text-sm">Accounts Center</p><p class="text-xs text-gray-500 mt-0.5">Password, security, personal details, ad preferences</p></div></div>
             
-            <div class="px-4 py-3 text-xs font-bold text-gray-500 uppercase mt-4">How you use Roasify</div>
-            <div class="settings-item"><i class="fa-regular fa-bookmark text-xl w-6"></i> <span>Saved</span></div>
-            <div class="settings-item"><i class="fa-solid fa-clock-rotate-left text-xl w-6"></i> <span>Archive</span></div>
-            <div class="settings-item"><i class="fa-solid fa-chart-line text-xl w-6"></i> <span>Your activity</span></div>
-            <div class="settings-item"><i class="fa-regular fa-bell text-xl w-6"></i> <span>Notifications</span></div>
+            <div class="px-4 py-3 text-[11px] font-black text-gray-500 uppercase tracking-wider mt-4">How you use Roasify</div>
+            <div class="settings-item"><i class="fa-regular fa-bookmark text-xl w-8 text-gray-300"></i> <span class="text-sm">Saved</span></div>
+            <div class="settings-item"><i class="fa-solid fa-clock-rotate-left text-xl w-8 text-gray-300"></i> <span class="text-sm">Archive</span></div>
+            <div class="settings-item"><i class="fa-solid fa-chart-line text-xl w-8 text-gray-300"></i> <span class="text-sm">Your activity</span></div>
+            <div class="settings-item"><i class="fa-regular fa-bell text-xl w-8 text-gray-300"></i> <span class="text-sm">Notifications</span></div>
+            <div class="settings-item"><i class="fa-solid fa-hourglass-half text-xl w-8 text-gray-300"></i> <span class="text-sm">Time management</span></div>
             
-            <div class="px-4 py-3 text-xs font-bold text-gray-500 uppercase mt-4">For professionals</div>
-            <div class="settings-item" onclick="document.getElementById('websiteBuilderModal').classList.add('open')"><i class="fa-solid fa-globe text-xl w-6 text-blue-400"></i> <span>Landing Page Builder</span></div>
-            <div class="settings-item"><i class="fa-solid fa-chart-pie text-xl w-6"></i> <span>Insights</span></div>
-            <div class="settings-item"><i class="fa-solid fa-bullhorn text-xl w-6"></i> <span>Ads payments</span></div>
+            <div class="px-4 py-3 text-[11px] font-black text-gray-500 uppercase tracking-wider mt-4">For professionals</div>
+            <div class="settings-item" onclick="document.getElementById('websiteBuilderModal').classList.add('open')"><i class="fa-solid fa-globe text-xl w-8 text-blue-500"></i> <div><p class="font-bold text-sm text-blue-400">Landing Page Builder</p><p class="text-[10px] text-blue-500/70">Create roasify.online website</p></div></div>
+            <div class="settings-item"><i class="fa-solid fa-chart-pie text-xl w-8 text-gray-300"></i> <span class="text-sm">Insights</span></div>
+            <div class="settings-item" onclick="showToast('Business Premium Plan Only', 'error')"><i class="fa-solid fa-user-tie text-xl w-8 text-green-500"></i> <span class="text-sm">Account type and tools</span></div>
+            <div class="settings-item"><i class="fa-solid fa-bullhorn text-xl w-8 text-gray-300"></i> <span class="text-sm">Ads payments</span></div>
             
-            <div class="px-4 py-3 text-xs font-bold text-gray-500 uppercase mt-4">Your app and media</div>
-            <div class="settings-item"><i class="fa-solid fa-language text-xl w-6"></i> <span>Language<br><select id="langSelect" class="bg-transparent text-blue-400 outline-none text-xs" onchange="changeLanguage()"><option value="en">English</option><option value="hi">Hindi</option><option value="mr">Marathi</option></select></span></div>
-            <div class="settings-item" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket text-red-500 text-xl w-6"></i> <span class="text-red-500 font-bold">Log Out</span></div>
+            <div class="px-4 py-3 text-[11px] font-black text-gray-500 uppercase tracking-wider mt-4">Who can see your content</div>
+            <div class="settings-item"><i class="fa-solid fa-lock text-xl w-8 text-gray-300"></i> <span class="text-sm">Account privacy</span></div>
+            <div class="settings-item"><i class="fa-solid fa-star text-xl w-8 text-yellow-500"></i> <span class="text-sm">Close Friends</span></div>
+            <div class="settings-item"><i class="fa-solid fa-ban text-xl w-8 text-red-500"></i> <span class="text-sm">Blocked</span></div>
             
-            <div class="text-center py-10 text-gray-600 text-xs">
-                Roasify Tech Solutions<br>End-to-End Encrypted
+            <div class="px-4 py-3 text-[11px] font-black text-gray-500 uppercase tracking-wider mt-4">Your app and media</div>
+            <div class="settings-item flex justify-between">
+                <div class="flex items-center gap-4"><i class="fa-solid fa-language text-xl w-8 text-gray-300"></i> <span class="text-sm">Language</span></div>
+                <select id="appLang" class="bg-gray-800 text-white outline-none rounded px-2 py-1 text-xs" onchange="translateApp()">
+                    <option value="en">English</option><option value="hi">Hindi</option><option value="mr">Marathi</option><option value="gu">Gujarati</option><option value="ta">Gujarati</option><option value="bn">Bengali</option>
+                </select>
+            </div>
+            
+            <div class="px-4 py-3 text-[11px] font-black text-gray-500 uppercase tracking-wider mt-4">More info and support</div>
+            <div class="settings-item"><i class="fa-solid fa-circle-question text-xl w-8 text-gray-300"></i> <span class="text-sm">Help</span></div>
+            <div class="settings-item" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket text-xl w-8 text-red-500"></i> <span class="text-sm font-bold text-red-500">Log Out</span></div>
+            
+            <div class="text-center py-10">
+                <p class="text-gray-600 text-xs font-bold tracking-widest uppercase">Roasify Ecosystem</p>
+                <p class="text-gray-700 text-[10px] mt-1">End-to-End Encrypted v3.0</p>
             </div>
         </div>
     </div>
 
-    <!-- BUSINESS LANDING PAGE BUILDER MODAL -->
-    <div id="websiteBuilderModal" class="fixed top-0 left-0 w-full h-full bg-[#111] z-[600] bottom-sheet">
-        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black">
-            <h2 class="text-lg font-bold"><i class="fa-solid fa-globe text-blue-500"></i> Business Web Builder</h2>
-            <i class="fa-solid fa-xmark text-xl cursor-pointer" onclick="document.getElementById('websiteBuilderModal').classList.remove('open')"></i>
+    <!-- C. BUSINESS LANDING PAGE BUILDER -->
+    <div id="websiteBuilderModal" class="fixed top-0 left-0 w-full h-full bg-[#111] z-[950] bottom-sheet overflow-y-auto">
+        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black sticky top-0 z-10">
+            <h2 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-globe text-blue-500"></i> Web Builder</h2>
+            <i class="fa-solid fa-xmark text-2xl cursor-pointer" onclick="document.getElementById('websiteBuilderModal').classList.remove('open')"></i>
         </div>
         <div class="p-6">
-            <p class="text-xs text-gray-400 mb-4">Aapka business trial shuru karein (7 Days Free). Roasify.online pe apni unique website banayein.</p>
-            <input type="text" id="wbTitle" placeholder="Business Name (e.g. Sharma Stores)" class="w-full bg-black border border-gray-700 p-3 rounded-lg mb-3 text-white outline-none">
-            <input type="text" id="wbTagline" placeholder="Tagline" class="w-full bg-black border border-gray-700 p-3 rounded-lg mb-3 text-white outline-none">
-            <textarea id="wbDesc" placeholder="About Business..." class="w-full bg-black border border-gray-700 p-3 rounded-lg mb-4 h-24 text-white outline-none resize-none"></textarea>
-            <label class="text-xs text-gray-400 mb-1 block">Brand Color:</label>
-            <input type="color" id="wbColor" value="#dd2a7b" class="w-full h-12 bg-black border border-gray-700 p-1 rounded-lg mb-6 cursor-pointer">
+            <div class="bg-blue-900/20 border border-blue-800 p-4 rounded-xl mb-6">
+                <p class="text-sm text-blue-400 font-bold mb-1">7-Day Free Business Trial</p>
+                <p class="text-xs text-gray-400">Get your unique link (roasify.online/biz/name). After 7 days, requires Premium.</p>
+            </div>
             
-            <button class="w-full bg-blue-600 py-3 rounded-lg font-bold shadow-[0_0_15px_rgba(37,99,235,0.4)]" onclick="publishLandingPage()">Go Live on Internet</button>
-            <div id="wbLinkContainer" class="mt-4 text-center hide">
-                <p class="text-green-400 text-sm font-bold">Your Website is Live!</p>
-                <a id="wbLinkText" href="#" target="_blank" class="text-blue-400 underline text-xs break-all"></a>
+            <label class="text-xs text-gray-400 mb-1 block">Business Name</label>
+            <input type="text" id="wbTitle" placeholder="e.g. Sharma Tech" class="w-full bg-black border border-gray-700 p-3 rounded-lg mb-4 text-white outline-none focus:border-blue-500">
+            
+            <label class="text-xs text-gray-400 mb-1 block">Tagline</label>
+            <input type="text" id="wbTagline" placeholder="Best tech in town" class="w-full bg-black border border-gray-700 p-3 rounded-lg mb-4 text-white outline-none">
+            
+            <label class="text-xs text-gray-400 mb-1 block">Description</label>
+            <textarea id="wbDesc" placeholder="About your business..." class="w-full bg-black border border-gray-700 p-3 rounded-lg mb-4 h-28 text-white outline-none resize-none"></textarea>
+            
+            <div class="flex gap-4 mb-8">
+                <div class="flex-1">
+                    <label class="text-xs text-gray-400 mb-1 block">Theme Color</label>
+                    <input type="color" id="wbColor" value="#2563eb" class="w-full h-12 bg-black border border-gray-700 p-1 rounded-lg cursor-pointer">
+                </div>
+            </div>
+            
+            <button class="w-full bg-gradient-to-r from-blue-600 to-cyan-500 py-4 rounded-xl font-black text-lg shadow-[0_0_20px_rgba(37,99,235,0.4)]" onclick="publishLandingPage()">Launch Website Live</button>
+            
+            <div id="wbLinkContainer" class="mt-6 text-center hide bg-green-900/20 border border-green-800 p-4 rounded-xl">
+                <p class="text-green-400 text-sm font-bold mb-2"><i class="fa-solid fa-circle-check"></i> Website is Live!</p>
+                <a id="wbLinkText" href="#" target="_blank" class="text-blue-400 font-mono text-xs break-all underline bg-black p-2 rounded block"></a>
             </div>
         </div>
     </div>
 
-    <!-- AVATAR SELECTOR MODAL -->
-    <div id="avatarModal" class="fixed bottom-0 left-0 w-full bg-gray-900 z-[600] bottom-sheet rounded-t-3xl pb-10">
-        <div class="w-12 h-1 bg-gray-600 rounded-full mx-auto mt-3 mb-4"></div>
-        <h3 class="text-center font-bold mb-4">Choose Avatar</h3>
-        <div class="grid grid-cols-4 gap-4 px-6" id="avatarGrid">
-            <!-- Avatars injected via JS -->
+    <!-- D. AVATAR SELECTOR -->
+    <div id="avatarModal" class="fixed bottom-0 left-0 w-full bg-gray-900 z-[950] bottom-sheet rounded-t-[30px] pb-10 shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+        <div class="w-14 h-1.5 bg-gray-600 rounded-full mx-auto mt-4 mb-4 cursor-pointer" onclick="document.getElementById('avatarModal').classList.remove('open')"></div>
+        <h3 class="text-center font-black mb-6 text-lg">Choose Your Avatar</h3>
+        <div class="grid grid-cols-4 gap-6 px-8" id="avatarGrid">
+            <!-- Injected via JS -->
+        </div>
+        <div class="px-8 mt-8">
+            <button class="w-full bg-gray-800 py-3 rounded-xl font-bold text-sm" onclick="document.getElementById('avatarUpload').click()"><i class="fa-solid fa-upload text-blue-400 mr-2"></i> Upload from Gallery</button>
+            <input type="file" id="avatarUpload" class="hide" accept="image/*" onchange="uploadCustomAvatar(event)">
         </div>
     </div>
 
-    <!-- COMMENTS SHEET -->
-    <div id="commentModal" class="fixed bottom-0 left-0 w-full h-[70vh] bg-gray-900 z-[600] bottom-sheet rounded-t-3xl flex flex-col">
-        <div class="w-12 h-1 bg-gray-600 rounded-full mx-auto mt-3 mb-2 cursor-pointer" onclick="document.getElementById('commentModal').classList.remove('open')"></div>
-        <h3 class="text-center font-bold border-b border-gray-800 pb-3">Comments</h3>
-        <div id="commentList" class="flex-1 overflow-y-auto p-4 space-y-4"></div>
-        <div class="p-3 border-t border-gray-800 flex gap-2 bg-black">
+    <!-- E. ADVANCED COMMENTS MODAL -->
+    <div id="commentModal" class="fixed bottom-0 left-0 w-full h-[75vh] bg-[#111] z-[800] bottom-sheet rounded-t-3xl flex flex-col shadow-[0_-10px_50px_rgba(0,0,0,0.9)] border-t border-gray-800">
+        <div class="w-12 h-1.5 bg-gray-600 rounded-full mx-auto mt-3 mb-2 cursor-pointer" onclick="document.getElementById('commentModal').classList.remove('open')"></div>
+        <h3 class="text-center font-bold border-b border-gray-800 pb-3 text-sm">Comments</h3>
+        <div id="commentList" class="flex-1 overflow-y-auto p-4 space-y-5 custom-scroll"></div>
+        
+        <!-- Reply Indicator -->
+        <div id="replyIndicator" class="bg-gray-800 text-xs px-4 py-2 flex justify-between items-center hide">
+            <span class="text-gray-400">Replying to <span id="replyToName" class="font-bold text-white">User</span></span>
+            <i class="fa-solid fa-xmark cursor-pointer" onclick="cancelReply()"></i>
+        </div>
+        
+        <div class="p-3 border-t border-gray-800 flex gap-3 bg-black items-center pb-6">
+            <div class="w-8 h-8 rounded-full bg-gray-800 flex justify-center items-center font-bold text-xs" id="cmtAvatar"></div>
             <input type="hidden" id="activeCommentPostId">
-            <input type="text" id="commentInput" placeholder="Add a comment..." class="flex-1 bg-gray-800 rounded-full px-4 py-2 outline-none text-sm">
-            <button class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center" onclick="addComment()"><i class="fa-solid fa-paper-plane"></i></button>
-        </div>
-    </div>
-
-    <!-- CREATE JOB MODAL -->
-    <div id="createJobModal" class="fixed top-0 left-0 w-full h-full bg-[#111] z-[600] bottom-sheet">
-        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black">
-            <h2 class="text-lg font-bold">Create Job/Gig</h2>
-            <i class="fa-solid fa-xmark text-xl cursor-pointer" onclick="document.getElementById('createJobModal').classList.remove('open')"></i>
-        </div>
-        <div class="p-4">
-            <input type="text" id="jobTitle" placeholder="Job Title" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
-            <input type="text" id="jobLoc" placeholder="Location" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
-            <textarea id="jobDesc" placeholder="Description & Pay..." class="w-full bg-gray-900 p-3 rounded mb-4 h-24 outline-none"></textarea>
-            <button class="w-full bg-blue-600 py-3 rounded font-bold" onclick="postJob()">Publish Job</button>
-        </div>
-    </div>
-
-    <!-- CREATE PRODUCT MODAL -->
-    <div id="createProductModal" class="fixed top-0 left-0 w-full h-full bg-[#111] z-[600] bottom-sheet">
-        <div class="p-4 border-b border-gray-800 flex justify-between items-center bg-black">
-            <h2 class="text-lg font-bold">Add to Marketplace</h2>
-            <i class="fa-solid fa-xmark text-xl cursor-pointer" onclick="document.getElementById('createProductModal').classList.remove('open')"></i>
-        </div>
-        <div class="p-4">
-            <input type="text" id="prodTitle" placeholder="Item Name" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
-            <input type="number" id="prodPrice" placeholder="Price (Diamond or ₹)" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
-            <input type="text" id="prodWA" placeholder="WhatsApp Number" class="w-full bg-gray-900 p-3 rounded mb-3 outline-none">
-            <button class="w-full bg-green-600 py-3 rounded font-bold" onclick="postProduct()">List Item</button>
+            <input type="hidden" id="replyTargetId">
+            <input type="text" id="commentInput" placeholder="Add a comment..." class="flex-1 bg-gray-900 rounded-full px-4 py-2.5 outline-none text-sm border border-gray-700 focus:border-blue-500 transition">
+            <button class="bg-blue-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow-lg transform active:scale-90 transition" onclick="addComment()"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
     </div>
 
@@ -391,14 +465,15 @@
     <!-- 🔥 ULTIMATE JAVASCRIPT ENGINE 🔥 -->
     <!-- ========================================== -->
     <script>
-        // -----------------------------------------
-        // 1. CONFIGURATION & ANTI-HACK MASKS
-        // -----------------------------------------
-        // Hiding direct Cloudinary URL from simple inspect
+        // ==========================================
+        // MODULE 1: CONFIG & SECURITY MASKING
+        // ==========================================
+        // Cloudinary Details Hidden via Array joining
         const _cX = ["https://api.", "cloudinary", ".com/v1_1/", "dhy28gbtx", "/auto/upload"];
         const getCloudUrl = () => _cX.join('');
         const _uP = "h5x3jurh";
 
+        // Firebase Init
         const firebaseConfig = {
             apiKey: "AIzaSyCatxgsLqijsj1o1BXTrJqAST02lPWa4SY",
             authDomain: "roasify-2b050.firebaseapp.com",
@@ -406,46 +481,58 @@
             projectId: "roasify-2b050"
         };
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth(); const db = firebase.database();
+        const auth = firebase.auth(); 
+        const db = firebase.database();
         
+        // Global State
         let currentUser = null, userData = null, todayPostsCount = 0;
-        let selectedMediaFile = null;
-        let dailyLikes = parseInt(localStorage.getItem('dailyLikes') || "0");
+        let selectedMediaFile = null, isAdScriptLoaded = false;
+        let dailyLikes = parseInt(localStorage.getItem('roasify_dl') || "0");
+        let lastLikeDate = localStorage.getItem('roasify_ld') || new Date().toDateString();
 
-        // UI Translation Engine
-        const dict = {
-            en: { home: "Home", reels: "Reels", jobs: "Jobs/Shop", profile: "Profile", postBtn: "Share" },
-            hi: { home: "होम", reels: "रील्स", jobs: "नौकरी/दुकान", profile: "प्रोफाइल", postBtn: "शेयर करें" },
-            mr: { home: "मुख्य पान", reels: "रील्स", jobs: "नोकरी", profile: "प्रोफाईल", postBtn: "पोस्ट करा" }
+        // Reset daily limits
+        if(lastLikeDate !== new Date().toDateString()) { dailyLikes = 0; localStorage.setItem('roasify_dl', 0); localStorage.setItem('roasify_ld', new Date().toDateString()); }
+
+        // ==========================================
+        // MODULE 2: TRANSLATION ENGINE
+        // ==========================================
+        const langDict = {
+            en: { sub: "Business, Jobs, Web Builder & Social Hub", n1: "Home", n2: "Reels", n3: "Shop", n4: "Profile", post: "Share" },
+            hi: { sub: "बिज़नेस, जॉब्स और सोशल मीडिया सुपर ऐप", n1: "होम", n2: "रील्स", n3: "दुकान", n4: "प्रोफाइल", post: "शेयर करें" },
+            mr: { sub: "व्यवसाय, नोकरी आणि सोशल मीडिया सुपर अॅप", n1: "मुख्य पान", n2: "रील्स", n3: "दुकान", n4: "प्रोफाईल", post: "पोस्ट करा" },
+            gu: { sub: "બિઝનેસ, નોકરી અને સોશિયલ મીડિયા સુપર એપ્લિકેશન", n1: "હોમ", n2: "રીલ્સ", n3: "દુકાન", n4: "પ્રોફાઇલ", post: "શેર કરો" },
+            bn: { sub: "ব্যবসা, চাকরি এবং সোশ্যাল মিডিয়া সুপার অ্যাপ", n1: "হোম", n2: "রিলস", n3: "দোকান", n4: "প্রোফাইল", post: "শেয়ার করুন" }
         };
 
-        function changeLanguage() {
-            let lang = document.getElementById('langSelect').value;
-            // Simulated translation update for bottom nav
-            document.querySelector('#nav-home').nextElementSibling.innerText = dict[lang].home;
-            document.querySelector('#nav-reels').nextElementSibling.innerText = dict[lang].reels;
-            document.getElementById('postBtn').innerText = dict[lang].postBtn;
-            showToast("Language changed to " + lang.toUpperCase(), "info");
+        function translateApp() {
+            let l = document.getElementById('appLang').value;
+            document.getElementById('lang-sub').innerText = langDict[l].sub;
+            document.getElementById('lang-nav1').innerText = langDict[l].n1;
+            document.getElementById('lang-nav2').innerText = langDict[l].n2;
+            document.getElementById('lang-nav3').innerText = langDict[l].n3;
+            document.getElementById('lang-nav4').innerText = langDict[l].n4;
+            document.getElementById('postBtn').innerText = langDict[l].post;
+            showToast("Language updated to " + l.toUpperCase(), "success");
         }
 
-        // -----------------------------------------
-        // 2. CORE UI FUNCTIONS
-        // -----------------------------------------
+        // ==========================================
+        // MODULE 3: CORE UI & AUTHENTICATION
+        // ==========================================
         function showToast(msg, type='success') {
             const t = document.getElementById('toastBox'); const i = document.getElementById('toastIcon');
             document.getElementById('toastMsg').innerText = msg;
-            i.className = type==='error' ? "fa-solid fa-circle-exclamation text-red-500" : type==='info' ? "fa-solid fa-circle-info text-blue-400" : "fa-solid fa-circle-check text-green-500";
-            t.style.top = '40px'; t.style.opacity = '1';
-            setTimeout(() => { t.style.top = '-100px'; t.style.opacity = '0'; }, 3000);
+            i.className = type==='error' ? "fa-solid fa-circle-exclamation text-red-500 fa-shake" : type==='info' ? "fa-solid fa-circle-info text-blue-400 fa-beat" : "fa-solid fa-circle-check text-green-500 fa-flip";
+            t.style.top = '50px'; t.style.opacity = '1';
+            setTimeout(() => { t.style.top = '-100px'; t.style.opacity = '0'; }, 3500);
         }
 
         function switchTab(tabId, navId) {
             ['tab-home', 'tab-reels', 'tab-jobs', 'tab-shop', 'tab-profile'].forEach(id => document.getElementById(id).classList.add('hide'));
             document.querySelectorAll('nav i').forEach(el => { el.classList.remove('nav-active'); el.classList.add('nav-inactive'); });
-            document.getElementById('nav-profile').classList.remove('border-gray-400');
+            document.getElementById('nav-profile').classList.replace('border-gray-400', 'border-gray-700');
             
             document.getElementById(tabId).classList.remove('hide');
-            if(navId === 'nav-profile') document.getElementById('nav-profile').classList.add('border-gray-400');
+            if(navId === 'nav-profile') document.getElementById('nav-profile').classList.replace('border-gray-700', 'border-gray-400');
             else document.getElementById(navId).classList.replace('nav-inactive', 'nav-active');
 
             if(tabId === 'tab-jobs') loadJobs();
@@ -454,14 +541,16 @@
             if(tabId === 'tab-reels') renderReels();
         }
 
-        // Avatar Generator
-        const avatars = ["https://api.dicebear.com/7.x/avataaars/svg?seed=Felix", "https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka", "https://api.dicebear.com/7.x/avataaars/svg?seed=Leo", "https://api.dicebear.com/7.x/avataaars/svg?seed=Mimi", "https://api.dicebear.com/7.x/bottts/svg?seed=Robo", "https://api.dicebear.com/7.x/identicon/svg?seed=Block"];
+        // Generate Avatars
         window.onload = () => {
+            const avatars = ["Felix","Aneka","Leo","Mimi","Jocelyn","Jon","Christian","Eden"];
             let grid = document.getElementById('avatarGrid');
-            avatars.forEach(url => {
-                grid.innerHTML += `<div class="w-14 h-14 bg-gray-800 rounded-full overflow-hidden cursor-pointer hover:border-2 border-pink-500" onclick="setAvatar('${url}')"><img src="${url}" class="w-full h-full"></div>`;
+            avatars.forEach(seed => {
+                let url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${seed}`;
+                grid.innerHTML += `<div class="aspect-square bg-gray-800 rounded-full overflow-hidden cursor-pointer border-2 border-transparent hover:border-pink-500 transition" onclick="setAvatar('${url}')"><img src="${url}" class="w-full h-full"></div>`;
             });
-            // Landing page check
+
+            // Handle Landing Page URLs (roasify.online/?web=userid)
             const urlParams = new URLSearchParams(window.location.search);
             if(urlParams.get('web')) {
                 document.getElementById('loginScreen').classList.add('hide');
@@ -474,12 +563,21 @@
         function setAvatar(url) {
             db.ref('Users/'+currentUser.uid+'/avatar').set(url);
             document.getElementById('avatarModal').classList.remove('open');
-            showToast("Profile Picture Updated");
+            showToast("Avatar Updated Successfully");
         }
 
-        // -----------------------------------------
-        // 3. AUTH & USER DATA
-        // -----------------------------------------
+        async function uploadCustomAvatar(e) {
+            let f = e.target.files[0]; if(!f) return;
+            showToast("Uploading Custom Avatar...", "info");
+            const fd = new FormData(); fd.append("file", f); fd.append("upload_preset", _uP);
+            try {
+                const res = await fetch(getCloudUrl(), { method: "POST", body: fd });
+                const data = await res.json();
+                if(data.secure_url) setAvatar(data.secure_url);
+            } catch(err) { showToast("Upload failed", "error"); }
+        }
+
+        // Auth Listener
         auth.onAuthStateChanged(user => {
             const urlParams = new URLSearchParams(window.location.search);
             if(urlParams.get('web')) return;
@@ -489,18 +587,18 @@
                 db.ref('Users/' + user.uid).on('value', snap => {
                     userData = snap.val();
                     if(!userData) {
-                        userData = { name: user.displayName, email: user.email, VIP_Star: "false", diamonds: 0, accountType: "Normal", createdAt: Date.now() };
+                        userData = { name: user.displayName, email: user.email, VIP_Star: "false", diamonds: 0, accountType: "Normal", createdAt: Date.now(), followers:0, following:0 };
                         db.ref('Users/' + user.uid).set(userData);
                     }
                     
-                    // UI Bindings
                     document.getElementById('loginScreen').classList.add('hide');
                     document.getElementById('mainApp').classList.remove('hide');
                     
-                    let avatarHtml = userData.avatar ? `<img src="${userData.avatar}" class="w-full h-full object-cover">` : `<span class="text-white font-bold">${userData.name.charAt(0)}</span>`;
-                    document.getElementById('postAvatarUI').innerHTML = avatarHtml;
-                    document.getElementById('navAvatarIcon').innerHTML = avatarHtml;
-                    document.getElementById('profileBigAvatar').innerHTML = avatarHtml;
+                    let initial = userData.avatar ? `<img src="${userData.avatar}" class="w-full h-full object-cover">` : `<span class="text-white font-bold">${userData.name.charAt(0)}</span>`;
+                    document.getElementById('postAvatarUI').innerHTML = initial;
+                    document.getElementById('navAvatarIcon').innerHTML = initial;
+                    document.getElementById('profileBigAvatar').innerHTML = initial;
+                    document.getElementById('cmtAvatar').innerHTML = initial;
                     
                     document.getElementById('profileNameText').innerHTML = userData.name + getBadge(userData);
                     document.getElementById('headerTitle').innerHTML = 'Roasify ' + (userData.VIP_Star === "true" ? `<i class="fa-solid fa-star badge-star text-sm"></i>` : '');
@@ -510,13 +608,18 @@
                     document.getElementById('statFollowers').innerText = userData.followers || 0;
                     document.getElementById('statFollowing').innerText = userData.following || 0;
 
-                    // 7-day trial check for business
+                    // Trial Check
                     if(userData.accountType === "Business" && userData.VIP_Star !== "true") {
                         let days = (Date.now() - userData.createdAt) / (1000 * 3600 * 24);
-                        if(days > 7) { db.ref('Users/'+user.uid+'/accountType').set("Normal"); showToast("Business Trial Ended. Buy VIP.", "error"); }
+                        if(days > 7) { db.ref('Users/'+user.uid+'/accountType').set("Normal"); showToast("Business Trial Expired. Buy VIP.", "error"); }
                     }
 
-                    checkLimits(); loadFeed();
+                    checkLimits(); loadOriginalFeed();
+                    
+                    // Inject Ads for Free Users
+                    if(userData.VIP_Star !== "true" && !isAdScriptLoaded) {
+                        injectGlobalAds(); isAdScriptLoaded = true;
+                    }
                 });
             } else {
                 document.getElementById('loginScreen').classList.remove('hide');
@@ -526,10 +629,11 @@
         function signInWithGoogle() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>showToast(e.message,'error')); }
         function logout() { auth.signOut(); window.location.reload(); }
         
+        // Advanced Badge Logic
         function getBadge(u) {
-            if(u.VIP_Star === "true") return `<i class="fa-solid fa-star badge-star text-sm ml-1"></i>`;
-            if(u.accountType === "Verified") return `<i class="fa-solid fa-gear badge-blue-neon text-sm ml-1"><i class="fa-solid fa-check absolute text-[8px] text-white"></i></i>`;
-            if(u.accountType === "Business") return `<i class="fa-solid fa-gear badge-green-gear text-sm ml-1"><i class="fa-solid fa-check absolute text-[8px] text-white"></i></i>`;
+            if(u.VIP_Star === "true") return `<i class="fa-solid fa-star badge-star text-lg ml-1" title="VIP Member"></i>`;
+            if(u.accountType === "Verified") return `<i class="fa-solid fa-gear badge-blue-neon text-lg ml-1" title="Verified"><i class="fa-solid fa-check inner-tick"></i></i>`;
+            if(u.accountType === "Business") return `<i class="fa-solid fa-gear badge-green-gear text-lg ml-1" title="Business"><i class="fa-solid fa-check inner-tick"></i></i>`;
             return "";
         }
 
@@ -540,13 +644,13 @@
             db.ref('Posts').orderByChild('userId').equalTo(currentUser.uid).once('value', snap => { document.getElementById('statPosts').innerText = snap.numChildren()||0; });
         }
 
-        // -----------------------------------------
-        // 4. UPLOAD ENGINE (Cloudinary Masked)
-        // -----------------------------------------
+        // ==========================================
+        // MODULE 4: CLOUDINARY SECURE UPLOAD
+        // ==========================================
         function handleSecureFileSelect(e) {
             let f = e.target.files[0]; if(!f) return;
-            if(f.size > 50000000) return showToast("Limit 50MB", "error");
-            if(f.type.startsWith('video/') && userData.VIP_Star !== "true") return showToast("Videos require VIP Status!", "error");
+            if(f.size > 50000000) return showToast("File too large! Max 50MB.", "error");
+            if(f.type.startsWith('video/') && userData.VIP_Star !== "true") return showToast("Videos require Premium VIP!", "error");
             
             selectedMediaFile = f; document.getElementById('mediaPreviewArea').classList.remove('hide');
             const url = URL.createObjectURL(f);
@@ -554,231 +658,352 @@
             else { document.getElementById('videoPreview').src = url; document.getElementById('videoPreview').classList.remove('hide'); document.getElementById('imagePreview').classList.add('hide'); }
         }
         function removeMedia() { selectedMediaFile=null; document.getElementById('mediaPreviewArea').classList.add('hide'); }
+        function addYoutubeLink() {
+            let url = prompt("Enter YouTube Link:");
+            if(url && url.includes("youtu")) { document.getElementById('postInputText').value += "\n" + url; showToast("YouTube Link added!", "success"); }
+        }
 
         async function publishEncryptedPost() {
-            if(userData.VIP_Star !== "true" && todayPostsCount >= 5) return showToast("Daily Limit Reached", "error");
+            if(userData.VIP_Star !== "true" && todayPostsCount >= 5) {
+                document.getElementById('walletModal').classList.remove('hide');
+                return showToast("Daily Limit Reached. Buy VIP!", "error");
+            }
             let text = document.getElementById('postInputText').value;
-            if(!text && !selectedMediaFile) return;
+            if(!text.trim() && !selectedMediaFile) return showToast("Post cannot be empty.", "error");
 
-            document.getElementById('postBtn').innerText = "..."; document.getElementById('postBtn').disabled = true;
+            document.getElementById('postBtn').innerText = "Working..."; document.getElementById('postBtn').disabled = true;
             let fUrl = "", mType = "text";
 
             if(selectedMediaFile) {
                 document.getElementById('uploadStatusBox').classList.remove('hide');
+                let progressFill = document.getElementById('uploadProgressBar');
+                let percentTxt = document.getElementById('uploadPercentTxt');
                 mType = selectedMediaFile.type.startsWith('video/') ? 'video' : 'image';
+                
                 const fd = new FormData(); fd.append("file", selectedMediaFile); fd.append("upload_preset", _uP);
                 try {
-                    let sim = 10; let tmr = setInterval(()=>{ sim+=10; if(sim>90)sim=90; document.getElementById('uploadProgressBar').style.width=sim+'%'; document.getElementById('uploadPercentTxt').innerText=sim+'%'; }, 300);
+                    let sim = 10; let tmr = setInterval(()=>{ sim+=10; if(sim>90)sim=90; progressFill.style.width=sim+'%'; percentTxt.innerText=sim+'%'; }, 300);
                     const res = await fetch(getCloudUrl(), { method: "POST", body: fd }); const data = await res.json();
                     clearInterval(tmr);
-                    if(data.secure_url) { fUrl = data.secure_url; } else throw new Error();
+                    if(data.secure_url) { fUrl = data.secure_url; progressFill.style.width='100%'; percentTxt.innerText='100%'; } 
+                    else throw new Error("API Limit");
                 } catch(e) { showToast("Upload Failed", "error"); resetPostUI(); return; }
             }
 
-            db.ref('Posts').push().set({
+            let today = new Date().toDateString();
+            let newPostRef = db.ref('Posts').push();
+            newPostRef.set({
                 userId: currentUser.uid, author: userData.name, text: text, mediaUrl: fUrl, mediaType: mType,
-                timestamp: firebase.database.ServerValue.TIMESTAMP, likes: 0, badge: getBadge(userData)
+                timestamp: firebase.database.ServerValue.TIMESTAMP, likes: 0, commentCount: 0,
+                badge: getBadge(userData), avatar: userData.avatar||""
             }).then(() => {
-                todayPostsCount++; db.ref('Users/'+currentUser.uid).update({todayPostsCount: todayPostsCount, lastPostDate: new Date().toDateString()});
-                resetPostUI(); showToast("Posted successfully!", "success");
+                todayPostsCount++; db.ref('Users/'+currentUser.uid).update({todayPostsCount: todayPostsCount, lastPostDate: today});
+                resetPostUI(); showToast("Post Live! 🚀", "success");
             });
         }
         function resetPostUI() { document.getElementById('postInputText').value=""; removeMedia(); document.getElementById('uploadStatusBox').classList.add('hide'); document.getElementById('postBtn').innerText="Share"; document.getElementById('postBtn').disabled=false; }
 
-        // -----------------------------------------
-        // 5. SOCIAL LOGIC (Like Limit, Reels, Follow)
-        // -----------------------------------------
+        // ==========================================
+        // MODULE 5: FEED, LIKES, COMMENTS, REELS
+        // ==========================================
+        let emojiTimer;
+        function startReact(postId) { emojiTimer = setTimeout(()=>{ showEmojiBar(postId); }, 500); }
+        function endReact() { clearTimeout(emojiTimer); }
+        function showEmojiBar(postId) {
+            let bar = document.createElement('div');
+            bar.className = 'reaction-bar active';
+            bar.innerHTML = `<span class="react-emoji" onclick="addReaction('${postId}', '😂')">😂</span><span class="react-emoji" onclick="addReaction('${postId}', '🔥')">🔥</span><span class="react-emoji" onclick="addReaction('${postId}', '❤️')">❤️</span><span class="react-emoji" onclick="addReaction('${postId}', '😢')">😢</span>`;
+            document.body.appendChild(bar);
+            setTimeout(()=>bar.remove(), 4000);
+        }
+        function addReaction(id, emoji) { showToast("Reacted " + emoji); db.ref('Posts/'+id+'/likes').transaction(c=>(c||0)+1); }
+
         function handleLikeLogic(postId, btnEl) {
             if(userData.VIP_Star !== "true") {
-                if(dailyLikes >= 3) {
-                    // Trigger Ad Overlay
+                if(dailyLikes >= 4) {
                     document.getElementById('adOverlay').classList.remove('hide');
-                    let skipBtn = document.getElementById('skipAdBtn');
-                    skipBtn.innerText = "Wait 5s"; skipBtn.disabled = true;
-                    setTimeout(()=>{ skipBtn.innerText="Skip Ad"; skipBtn.disabled=false; skipBtn.onclick=()=>{ document.getElementById('adOverlay').classList.add('hide'); dailyLikes=0; localStorage.setItem('dailyLikes', 0); doLike(postId, btnEl); } }, 5000);
-                    // Load Ad
+                    let skipBtn = document.getElementById('skipAdBtn'); skipBtn.innerText = "Wait 5s..."; skipBtn.disabled = true;
+                    setTimeout(()=>{ skipBtn.innerText="Skip Ad"; skipBtn.disabled=false; skipBtn.onclick=()=>{ document.getElementById('adOverlay').classList.add('hide'); dailyLikes=0; localStorage.setItem('roasify_dl', 0); doLike(postId, btnEl); } }, 5000);
                     document.getElementById('fullScreenAdContainer').innerHTML = `<script src="https://powderencouraged.com/2a5d40fcc1c73802296077dcb8af960f/invoke.js"><\/script>`;
                     return;
                 }
-                dailyLikes++; localStorage.setItem('dailyLikes', dailyLikes);
+                dailyLikes++; localStorage.setItem('roasify_dl', dailyLikes);
             }
             doLike(postId, btnEl);
         }
 
         function doLike(id, el) {
             db.ref('Posts/'+id+'/likes').transaction(c=>(c||0)+1, (err, comm) => {
-                if(comm) {
-                    el.classList.replace('fa-regular', 'fa-solid');
-                    el.style.color = '#ef4444';
-                    el.style.animation = 'heartPop 0.3s ease';
-                }
+                if(comm) { el.classList.replace('fa-regular', 'fa-solid'); el.style.color = '#ef4444'; el.style.animation = 'heartPop 0.4s ease'; }
             });
         }
 
-        // Reaction Long Press logic simulated
-        let pressTimer;
-        function startPress(e) { pressTimer = setTimeout(()=>showToast('Emoji reaction feature loaded', 'info'), 800); }
-        function endPress(e) { clearTimeout(pressTimer); }
+        function realFollowUser(uid, name) {
+            if(currentUser.uid === uid) return;
+            db.ref('Users/'+currentUser.uid+'/following').transaction(c=>(c||0)+1);
+            db.ref('Users/'+uid+'/followers').transaction(c=>(c||0)+1);
+            showToast("Following " + name, "success");
+        }
 
-        function loadFeed() {
+        function loadOriginalFeed() {
             db.ref('Posts').orderByChild('timestamp').limitToLast(30).on('value', snap => {
                 const feed = document.getElementById('realFeedContainer'); feed.innerHTML = '';
                 let posts = []; snap.forEach(c => posts.push({id: c.key, ...c.val()})); posts.reverse();
-                if(!posts.length) return feed.innerHTML = '<p class="text-center text-gray-500 mt-10">Be the first to post!</p>';
+                if(!posts.length) return feed.innerHTML = '<p class="text-center text-gray-500 mt-10 font-bold">No Posts Yet.</p>';
                 
+                let adCounter = 1;
                 posts.forEach((p, i) => {
-                    let media = p.mediaUrl ? (p.mediaType==='image' ? `<img src="${p.mediaUrl}" class="w-full object-contain max-h-[500px]">` : `<video src="${p.mediaUrl}" class="w-full object-contain max-h-[500px]" controls></video>`) : "";
-                    
+                    let avatar = p.avatar ? `<img src="${p.avatar}" class="w-full h-full object-cover">` : `<span class="font-bold">${p.author.charAt(0)}</span>`;
+                    let media = p.mediaUrl ? (p.mediaType==='image' ? `<img src="${p.mediaUrl}" class="w-full object-contain max-h-[500px] bg-black border-y border-gray-900" loading="lazy">` : `<video src="${p.mediaUrl}" class="w-full object-contain max-h-[500px] bg-black border-y border-gray-900" controls></video>`) : "";
+                    let pText = p.text.replace(/(https?\:\/\/)?(www\.youtube\.com|youtu\.?be)\/.+?(?=\s|$)/g, url => `<a href="${url}" target="_blank" class="text-blue-500 font-bold"><i class="fa-brands fa-youtube text-red-500"></i> YouTube Video</a>`);
+                    let flw = p.userId !== currentUser.uid ? `<button class="text-blue-400 text-xs font-bold border border-gray-700 px-3 py-1 rounded-full hover:bg-gray-800" onclick="realFollowUser('${p.userId}', '${p.author}')">Follow</button>` : '';
+
                     feed.innerHTML += `
-                    <div class="bg-[#050505] border-b border-gray-800 mb-2">
-                        <div class="flex items-center p-3">
-                            <div class="w-9 h-9 rounded-full bg-gray-800 flex items-center justify-center font-bold">${p.author.charAt(0)}</div>
-                            <div class="ml-3 flex-1"><p class="font-bold text-sm text-gray-200">${p.author} ${p.badge||''}</p></div>
-                            ${p.userId !== currentUser.uid ? `<button class="text-blue-500 text-xs font-bold" onclick="showToast('Followed', 'success')">Follow</button>` : ''}
-                        </div>
-                        <p class="px-3 pb-2 text-sm">${p.text}</p>
-                        ${media}
-                        <div class="p-3 flex justify-between text-2xl text-gray-400">
-                            <div class="flex gap-5">
-                                <i class="fa-regular fa-heart cursor-pointer" onmousedown="startPress()" onmouseup="endPress()" onclick="handleLikeLogic('${p.id}', this)"></i>
-                                <i class="fa-regular fa-comment cursor-pointer" onclick="document.getElementById('commentModal').classList.add('open')"></i>
-                                <i class="fa-solid fa-share-nodes cursor-pointer" onclick="showToast('Link Copied')"></i>
+                    <article class="w-full mb-3 bg-[#050505] border-b border-gray-900 pb-3">
+                        <div class="flex items-center justify-between p-3">
+                            <div class="flex items-center gap-3 cursor-pointer">
+                                <div class="w-10 h-10 rounded-full border border-gray-700 overflow-hidden bg-gray-800 flex justify-center items-center">${avatar}</div>
+                                <div class="flex flex-col"><span class="font-bold text-sm text-gray-100 flex items-center">${p.author} ${p.badge||''}</span></div>
                             </div>
+                            <div class="flex items-center gap-3">${flw} <i class="fa-solid fa-ellipsis-vertical text-gray-500"></i></div>
                         </div>
-                        <p class="px-3 pb-3 text-xs font-bold">${p.likes||0} likes</p>
-                    </div>`;
+                        <div class="px-4 pb-3 text-[15px] text-gray-200 whitespace-pre-wrap">${pText}</div>
+                        ${media}
+                        <div class="px-4 pt-3 flex justify-between text-2xl text-gray-400">
+                            <div class="flex gap-6 items-center">
+                                <i class="fa-regular fa-heart cursor-pointer transition active:scale-125" onmousedown="startReact('${p.id}')" onmouseup="endReact()" onmouseleave="endReact()" ontouchstart="startReact('${p.id}')" ontouchend="endReact()" onclick="handleLikeLogic('${p.id}', this)"></i>
+                                <i class="fa-regular fa-comment cursor-pointer hover:text-white transition" onclick="openCommentModal('${p.id}')"></i>
+                                <i class="fa-solid fa-paper-plane cursor-pointer hover:text-blue-400 transition" onclick="navigator.clipboard.writeText('https://roasify.online/p/${p.id}'); showToast('Link Copied');"></i>
+                            </div>
+                            <i class="fa-regular fa-bookmark cursor-pointer hover:text-yellow-400 transition" onclick="showToast('Saved')"></i>
+                        </div>
+                        <div class="px-4 pt-2 text-sm">
+                            <span class="font-bold cursor-pointer">${p.likes||0} likes</span> • <span class="text-gray-500 cursor-pointer" onclick="openCommentModal('${p.id}')">View ${p.commentCount||0} comments</span>
+                        </div>
+                    </article>`;
+
+                    if ((i + 1) % 3 === 0 && userData.VIP_Star !== "true") {
+                        let adId = 'feed-ad-' + adCounter;
+                        feed.innerHTML += `<div class="text-[10px] text-gray-600 text-center uppercase tracking-widest mt-4">Advertisement</div><div id="${adId}" class="ad-container"></div>`;
+                        setTimeout(() => startAdsWaterfall(adId), 800); adCounter++;
+                    }
                 });
             });
         }
 
-        // Reels Renderer
+        // Reels Logic (Scroll Snap)
         function renderReels() {
             const rc = document.getElementById('reelsContainer');
-            db.ref('Posts').orderByChild('mediaType').equalTo('video').limitToLast(10).once('value', snap => {
+            db.ref('Posts').orderByChild('mediaType').equalTo('video').limitToLast(15).once('value', snap => {
                 rc.innerHTML = '';
+                if(!snap.exists()) { rc.innerHTML = '<p class="text-white mt-20 text-center">No reels. Upload video!</p>'; return; }
                 snap.forEach(c => {
                     let r = c.val();
+                    let avatar = r.avatar ? `<img src="${r.avatar}" class="w-full h-full object-cover">` : `<span class="font-bold">${r.author.charAt(0)}</span>`;
                     rc.innerHTML += `
                     <div class="reel-item">
                         <video src="${r.mediaUrl}" class="reel-video" loop onclick="this.paused?this.play():this.pause()"></video>
                         <div class="reel-overlay">
-                            <div>
-                                <h3 class="font-bold text-white text-lg flex items-center gap-2">${r.author} ${r.badge||''} <button class="border border-white text-[10px] px-2 py-0.5 rounded">Follow</button></h3>
-                                <p class="text-sm mt-1 w-64 line-clamp-2">${r.text}</p>
+                            <div class="w-3/4">
+                                <h3 class="font-bold text-white text-lg flex items-center gap-2 mb-1">${r.author} ${r.badge||''} <button class="border border-white text-[10px] px-2 py-0.5 rounded font-bold" onclick="realFollowUser('${r.userId}', '${r.author}')">Follow</button></h3>
+                                <p class="text-sm text-gray-200 line-clamp-2">${r.text}</p>
                             </div>
-                            <div class="reel-actions text-3xl">
-                                <div class="flex flex-col items-center gap-1" onclick="handleLikeLogic('${c.key}', this.children[0])"><i class="fa-solid fa-heart drop-shadow"></i><span class="text-xs">${r.likes||0}</span></div>
-                                <div class="flex flex-col items-center gap-1"><i class="fa-solid fa-comment-dots drop-shadow"></i><span class="text-xs">0</span></div>
-                                <i class="fa-solid fa-share drop-shadow" onclick="showToast('Shared')"></i>
-                                <div class="w-8 h-8 rounded mt-2 border-2 border-white overflow-hidden bg-gray-800 flex justify-center items-center font-bold text-xs">${r.author.charAt(0)}</div>
+                            <div class="reel-actions text-3xl text-white">
+                                <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="handleLikeLogic('${c.key}', this.children[0])"><i class="fa-solid fa-heart drop-shadow-md"></i><span class="text-xs font-bold">${r.likes||0}</span></div>
+                                <div class="flex flex-col items-center gap-1 cursor-pointer" onclick="openCommentModal('${c.key}')"><i class="fa-solid fa-comment-dots drop-shadow-md"></i><span class="text-xs font-bold">${r.commentCount||0}</span></div>
+                                <i class="fa-solid fa-share drop-shadow-md" onclick="showToast('Shared')"></i>
+                                <div class="w-9 h-9 rounded-lg border-2 border-white overflow-hidden bg-gray-800 flex justify-center items-center text-xs mt-2">${avatar}</div>
                             </div>
                         </div>
                     </div>`;
                 });
+                
+                // Intersection Observer for Auto-play
+                let options = { root: rc, threshold: 0.7 };
+                let observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        let vid = entry.target.querySelector('video');
+                        if(entry.isIntersecting) { vid.play(); } else { vid.pause(); }
+                    });
+                }, options);
+                document.querySelectorAll('.reel-item').forEach(item => observer.observe(item));
             });
         }
 
-        // -----------------------------------------
-        // 6. DIRECT UPI PAYMENT (Virtual Wallet)
-        // -----------------------------------------
-        function initiateUPIPayment(amount, targetParam) {
-            // Option 1 implemented: Direct UPI Intent
-            let upiId = "8427902120@ptsbi"; // Asli ID format
-            let name = "Roasify App";
-            let note = "Buy " + targetParam;
-            
-            // This URL scheme forces payment apps to open directly on mobile
-            let upiLink = `upi://pay?pa=${upiId}&pn=${name}&tn=${note}&am=${amount}&cu=INR`;
-            
-            showToast("Opening PhonePe/GPay...", "info");
-            
-            // Simulate successful transaction locally for immediate UI update in app
-            // In a real backend, you'd use a callback webhook. Here we trust the intent for demonstration.
-            setTimeout(() => {
-                if(targetParam === 'VIP') {
-                    db.ref('Users/'+currentUser.uid+'/VIP_Star').set("true");
-                    db.ref('Users/'+currentUser.uid+'/accountType').set("Verified");
-                    showToast("Payment Verified! VIP Activated.", "success");
-                } else {
-                    let curr = (userData.diamonds || 0) + parseInt(targetParam);
-                    db.ref('Users/'+currentUser.uid+'/diamonds').set(curr);
-                    showToast(targetParam + " Diamonds Added!", "success");
-                }
-                document.getElementById('walletModal').classList.add('hide');
-            }, 3000);
+        // Advanced Comments (Reply on Reply Logic Basic structure)
+        function openCommentModal(id) {
+            document.getElementById('commentModal').classList.add('open');
+            document.getElementById('activeCommentPostId').value = id;
+            document.getElementById('replyTargetId').value = "";
+            document.getElementById('replyIndicator').classList.add('hide');
+            loadComments(id);
+        }
+        function loadComments(postId) {
+            db.ref('Comments/'+postId).on('value', snap => {
+                let list = document.getElementById('commentList'); list.innerHTML = '';
+                if(!snap.exists()) return list.innerHTML = "<p class='text-gray-500 text-center text-sm'>Be the first to comment!</p>";
+                snap.forEach(c => {
+                    let cv = c.val();
+                    list.innerHTML += `
+                    <div class="flex gap-3 mb-2">
+                        <div class="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center font-bold text-xs flex-shrink-0">${cv.author.charAt(0)}</div>
+                        <div class="bg-[#1a1a1a] p-3 rounded-2xl rounded-tl-none text-sm border border-gray-800 w-full">
+                            <span class="font-bold text-gray-300 text-xs">${cv.author} ${cv.badge||''}</span>
+                            <p class="mt-1">${cv.text}</p>
+                            <p class="text-[10px] text-gray-500 mt-2 font-bold cursor-pointer" onclick="prepReply('${c.key}', '${cv.author}')">Reply</p>
+                        </div>
+                    </div>`;
+                });
+                list.scrollTop = list.scrollHeight;
+            });
+        }
+        function prepReply(cId, name) {
+            document.getElementById('replyTargetId').value = cId;
+            document.getElementById('replyToName').innerText = name;
+            document.getElementById('replyIndicator').classList.remove('hide');
+            document.getElementById('commentInput').focus();
+        }
+        function cancelReply() { document.getElementById('replyTargetId').value = ""; document.getElementById('replyIndicator').classList.add('hide'); }
+        
+        function addComment() {
+            let pid = document.getElementById('activeCommentPostId').value;
+            let rid = document.getElementById('replyTargetId').value;
+            let txt = document.getElementById('commentInput').value;
+            if(!txt.trim()) return;
 
-            // Attempt to launch native app
-            window.location.href = upiLink;
+            let ref = rid ? db.ref(`Comments/${pid}/${rid}/replies`).push() : db.ref('Comments/'+pid).push();
+            
+            ref.set({ author: userData.name, text: txt, badge: getBadge(userData), time: Date.now() }).then(()=>{
+                if(!rid) db.ref('Posts/'+pid+'/commentCount').transaction(c=>(c||0)+1);
+                document.getElementById('commentInput').value = "";
+                cancelReply();
+            });
         }
 
-        // -----------------------------------------
-        // 7. BUSINESS BUILDER & JOBS
-        // -----------------------------------------
+        // ==========================================
+        // MODULE 6: PAYMENTS & WALLET (UPI + CRYPTO)
+        // ==========================================
+        function initiatePayment(method, amount, target) {
+            if(method === 'upi') {
+                showToast("Opening UPI App...", "info");
+                let upiLink = `upi://pay?pa=8427902120@ptsbi&pn=Roasify&tn=Buy_${target}&am=${amount}&cu=INR`;
+                setTimeout(() => simulatePaymentSuccess(target, amount), 3000);
+                window.location.href = upiLink;
+            } else if (method === 'oxapay' || method === 'plisio') {
+                showToast(`Connecting to ${method.toUpperCase()} secure gateway...`, "info");
+                // Mocking Crypto redirect
+                setTimeout(() => {
+                    let confirmPay = confirm(`Simulate Crypto Payment Success for ${target}? (Dev Mode)`);
+                    if(confirmPay) simulatePaymentSuccess(target, amount);
+                }, 1500);
+            }
+        }
+        function simulatePaymentSuccess(target, amount) {
+            if(target === 'VIP') {
+                db.ref('Users/'+currentUser.uid+'/VIP_Star').set("true");
+                db.ref('Users/'+currentUser.uid+'/accountType').set("Verified");
+                showToast("Premium VIP Activated!", "success");
+            } else {
+                let d = (userData.diamonds||0) + parseInt(target);
+                db.ref('Users/'+currentUser.uid+'/diamonds').set(d);
+                showToast(target + " Diamonds Added!", "success");
+            }
+            document.getElementById('walletModal').classList.add('hide');
+        }
+
+        // ==========================================
+        // MODULE 7: BUSINESS, JOBS & WEB BUILDER
+        // ==========================================
         function publishLandingPage() {
-            let t=document.getElementById('wbTitle').value, d=document.getElementById('wbDesc').value, c=document.getElementById('wbColor').value;
-            db.ref('Websites/'+currentUser.uid).set({title:t, tagline:document.getElementById('wbTagline').value, description:d, color:c})
+            let t=document.getElementById('wbTitle').value, d=document.getElementById('wbDesc').value, c=document.getElementById('wbColor').value, tg=document.getElementById('wbTagline').value;
+            if(!t) return showToast("Title required", "error");
+            db.ref('Websites/'+currentUser.uid).set({title:t, tagline:tg, description:d, color:c})
             .then(()=>{
                 let link = `https://roasify.online/?web=${currentUser.uid}`;
                 document.getElementById('wbLinkContainer').classList.remove('hide');
                 document.getElementById('wbLinkText').innerText = link;
                 document.getElementById('wbLinkText').href = link;
-                showToast("Website is LIVE!", "success");
-                // Auto upgrade to business trial
-                if(userData.accountType === "Normal") db.ref('Users/'+currentUser.uid+'/accountType').set("Business");
+                if(userData.accountType==="Normal") db.ref('Users/'+currentUser.uid+'/accountType').set("Business");
+                showToast("Business Website Live!", "success");
             });
         }
-
         function loadLandingPage(uid) {
             db.ref('Websites/'+uid).once('value', s=>{
-                if(!s.exists()) return document.getElementById('webContent').innerHTML = "<h1 class='text-center mt-20 font-bold'>Website Not Found</h1>";
+                if(!s.exists()) return document.getElementById('webContent').innerHTML = "<h1 class='text-center mt-20 text-2xl font-black'>Website Not Found 404</h1>";
                 let d = s.val();
                 document.getElementById('webContent').innerHTML = `
-                    <div style="background:${d.color}" class="py-24 text-center text-white rounded-b-[40px]">
-                        <h1 class="text-4xl font-black">${d.title}</h1>
-                        <p class="text-lg opacity-80 mt-2">${d.tagline}</p>
+                    <div style="background:${d.color}" class="py-32 text-center text-white rounded-b-[50px] shadow-lg">
+                        <h1 class="text-5xl font-black px-4">${d.title}</h1>
+                        <p class="text-xl font-bold opacity-90 mt-3">${d.tagline}</p>
                     </div>
-                    <div class="p-8 max-w-lg mx-auto text-center">
-                        <p class="text-gray-700 leading-relaxed">${d.description}</p>
-                        <button style="background:${d.color}" class="text-white mt-10 px-8 py-3 rounded-full font-bold shadow-lg" onclick="alert('Contact Form logic')">Contact Us</button>
+                    <div class="p-8 max-w-lg mx-auto text-center mt-6">
+                        <p class="text-gray-800 leading-relaxed text-lg">${d.description}</p>
+                        <button style="background:${d.color}" class="text-white mt-12 px-10 py-4 rounded-full font-black shadow-xl w-full text-lg">Contact Us / Order</button>
                     </div>
+                    <div class="text-center py-10 mt-10 text-gray-400 text-xs">Powered by Roasify.online</div>
                 `;
             });
         }
 
+        // Jobs
         function postJob() {
-            db.ref('Jobs').push({title:document.getElementById('jobTitle').value, desc:document.getElementById('jobDesc').value, loc:document.getElementById('jobLoc').value, business:userData.name})
+            let t=document.getElementById('jobTitle').value, l=document.getElementById('jobLoc').value, d=document.getElementById('jobDesc').value;
+            if(!t) return;
+            db.ref('Jobs').push({title:t, desc:d, loc:l, business:userData.name, bBadge:getBadge(userData), time:Date.now()})
             .then(()=>{document.getElementById('createJobModal').classList.remove('open'); showToast('Job Posted'); loadJobs();});
         }
         function loadJobs() {
-            db.ref('Jobs').limitToLast(10).once('value', s=>{
+            db.ref('Jobs').limitToLast(15).once('value', s=>{
                 let list=document.getElementById('jobsListContainer'); list.innerHTML='';
-                s.forEach(c=>{ let j=c.val(); list.innerHTML+=`<div class="bg-gray-900 p-4 rounded-lg border border-gray-800"><h3 class="text-blue-400 font-bold">${j.title}</h3><p class="text-xs text-gray-500 mb-2">${j.business} • ${j.loc}</p><p class="text-sm">${j.desc}</p><button class="mt-3 bg-white text-black px-4 py-1 rounded text-xs font-bold">Apply via Resume</button></div>`; });
+                let arr=[]; s.forEach(c=>arr.push(c.val())); arr.reverse();
+                arr.forEach(j=>{ list.innerHTML+=`<div class="bg-[#111] p-5 rounded-2xl border border-gray-800 shadow-md"><h3 class="text-blue-400 font-black text-lg mb-1">${j.title}</h3><p class="text-xs text-gray-400 mb-3 font-bold"><i class="fa-solid fa-building"></i> ${j.business} ${j.bBadge||''} • <i class="fa-solid fa-location-dot"></i> ${j.loc}</p><p class="text-sm text-gray-300 leading-relaxed">${j.desc}</p><button class="mt-4 w-full bg-blue-600/20 text-blue-400 border border-blue-500 py-2 rounded-xl font-bold shadow hover:bg-blue-600 hover:text-white transition" onclick="showToast('Resume upload modal will open')">Apply for Job</button></div>`; });
             });
         }
 
+        // Shop (Marketplace)
         function postProduct() {
-            db.ref('Products').push({title:document.getElementById('prodTitle').value, price:document.getElementById('prodPrice').value, wa:document.getElementById('prodWA').value, seller:userData.name})
-            .then(()=>{document.getElementById('createProductModal').classList.remove('open'); showToast('Listed'); loadShop();});
+            let t=document.getElementById('prodTitle').value, p=document.getElementById('prodPrice').value, w=document.getElementById('prodWA').value;
+            if(!t) return;
+            db.ref('Products').push({title:t, price:p, wa:w, seller:userData.name, sBadge:getBadge(userData)})
+            .then(()=>{document.getElementById('createProductModal').classList.remove('open'); showToast('Product Listed'); loadShop();});
         }
         function loadShop() {
             let curr = document.getElementById('currencySelect').value;
-            db.ref('Products').limitToLast(10).once('value', s=>{
+            db.ref('Products').limitToLast(20).once('value', s=>{
                 let g=document.getElementById('shopGridContainer'); g.innerHTML='';
-                s.forEach(c=>{ let p=c.val(); g.innerHTML+=`<div class="bg-gray-900 p-3 rounded-lg"><div class="h-24 bg-gray-800 rounded flex items-center justify-center mb-2"><i class="fa-solid fa-box text-3xl text-gray-600"></i></div><p class="font-bold text-sm truncate">${p.title}</p><p class="text-green-400 font-black">${curr}${p.price}</p><button class="w-full bg-green-600 mt-2 py-1 rounded text-xs font-bold" onclick="window.open('https://wa.me/${p.wa}', '_blank')">Buy via WA</button></div>`; });
+                let arr=[]; s.forEach(c=>arr.push(c.val())); arr.reverse();
+                arr.forEach(p=>{ g.innerHTML+=`<div class="bg-[#111] p-3 rounded-2xl border border-gray-800 shadow-lg"><div class="h-28 bg-gray-900 rounded-xl flex items-center justify-center mb-3 border border-gray-700"><i class="fa-solid fa-box-open text-4xl text-gray-600"></i></div><h3 class="font-bold text-sm text-white line-clamp-1">${p.title}</h3><p class="text-[10px] text-gray-500 mb-1">${p.seller} ${p.sBadge||''}</p><p class="text-green-400 font-black text-lg">${curr}${p.price}</p><button class="w-full bg-green-600 hover:bg-green-500 mt-2 py-2 rounded-lg text-xs font-bold text-white shadow-lg" onclick="window.open('https://wa.me/${p.wa}', '_blank')"><i class="fa-brands fa-whatsapp"></i> Buy Item</button></div>`; });
             });
         }
 
+        // Profile Data
         function loadProfileData() {
-            let coverHtml = userData.avatar ? `background-image: url(${userData.avatar}); filter: blur(5px);` : '';
-            document.getElementById('profileCoverImg').style = coverHtml;
+            if(userData.avatar) document.getElementById('profileCoverImg').style.backgroundImage = `url(${userData.avatar})`;
             db.ref('Posts').orderByChild('userId').equalTo(currentUser.uid).once('value', s=>{
                 let g = document.getElementById('profilePostsGrid'); g.innerHTML='';
-                s.forEach(c=>{
-                    let p=c.val();
-                    if(p.mediaUrl) g.innerHTML+=`<div class="aspect-square bg-gray-800"><img src="${p.mediaUrl}" class="w-full h-full object-cover"></div>`;
-                    else g.innerHTML+=`<div class="aspect-square bg-gray-800 flex items-center justify-center p-2 text-xs text-center">${p.text}</div>`;
+                let arr=[]; s.forEach(c=>arr.push(c.val())); arr.reverse();
+                arr.forEach(p=>{
+                    if(p.mediaUrl && p.mediaType==="image") g.innerHTML+=`<div class="aspect-square bg-gray-900"><img src="${p.mediaUrl}" class="w-full h-full object-cover"></div>`;
+                    else if(p.mediaUrl && p.mediaType==="video") g.innerHTML+=`<div class="aspect-square bg-gray-900 relative"><video src="${p.mediaUrl}" class="w-full h-full object-cover"></video><i class="fa-solid fa-play absolute top-2 right-2 text-white drop-shadow"></i></div>`;
+                    else g.innerHTML+=`<div class="aspect-square bg-gray-900 flex items-center justify-center p-2 text-xs text-center border border-black">${p.text}</div>`;
                 });
             });
+        }
+
+        // ==========================================
+        // MODULE 8: ADS WATERFALL
+        // ==========================================
+        function injectGlobalAds() {
+            let s1 = document.createElement('script'); s1.src = "https://powderencouraged.com/fd/46/5e/fd465eacc9049ad8b3e1819bb7b1c0ac.js"; document.body.appendChild(s1);
+            let s2 = document.createElement('script'); s2.src = "https://powderencouraged.com/09/61/b5/0961b550aa00a4b6c5823c89a156caf5.js"; document.body.appendChild(s2);
+        }
+        function startAdsWaterfall(containerId) {
+            let container = document.getElementById(containerId); if (!container) return;
+            container.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin text-gray-600 text-2xl mb-2"></i><div id="ezmob-${containerId}"></div>`;
+            try { let ez = document.createElement('script'); ez.innerHTML = `var pbjs = pbjs || {}; pbjs.que = pbjs.que || []; pbjs.que.push(function() { pbjs.addAdUnits([{ code: 'ezmob-${containerId}', mediaTypes: { video: { context: 'outstream', playerSize: [300, 250], renderer: { url: 'https://docdn.ezmob.com/outstream_pb.js', render: function(bid){ OutstreamPlayerPB(bid, {displayMode: 'floating', transitions: true, vpaidMode: 2}); } } } }, bids: [{ bidder: 'adkernel', params: { zoneId: 338010, host: 'cpm.ezmob.com' } }] }]); pbjs.requestBids({ bidsBackHandler: function(bidResponses) { var bids = pbjs.getHighestCpmBids('ezmob-${containerId}'); if(bids.length > 0) pbjs.renderAd(document, bids[0].adId); }}); });`; container.appendChild(ez); } catch(e) {}
+            setTimeout(() => {
+                if (container.clientHeight < 100) { container.innerHTML = ''; let c = document.createElement('script'); c.innerHTML = `atOptions = { 'key' : '2a5d40fcc1c73802296077dcb8af960f', 'format' : 'iframe', 'height' : 250, 'width' : 300, 'params' : {} };`; container.appendChild(c); let f = document.createElement('script'); f.src = `https://powderencouraged.com/2a5d40fcc1c73802296077dcb8af960f/invoke.js`; container.appendChild(f); }
+            }, 7000); 
         }
     </script>
 </body>
